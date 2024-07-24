@@ -103,6 +103,7 @@ const Navigation = props => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [settings.layout])
 
+  // Add a newline before return
   return (
     // eslint-disable-next-line lines-around-comment
     // Sidebar Vertical Menu

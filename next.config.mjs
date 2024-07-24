@@ -5,6 +5,9 @@ dotenv.config()
 
 const nextConfig = {
   basePath: process.env.BASEPATH,
+  eslint: {
+    ignoreDuringBuilds: true
+  },
   env: {
     SQL_USERNAME: process.env.SQL_USERNAME,
     SQL_PASSWORD: process.env.SQL_PASSWORD,

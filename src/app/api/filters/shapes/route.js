@@ -1,11 +1,14 @@
 // File: src/app/api/filters/shapes/route.js
 import { NextResponse } from 'next/server'
+
 import { callStoredProcedure } from '../../db'
 
 export async function GET(request) {
   try {
     const result = await callStoredProcedure('sp_GetShapes', {}, ['StatusID', 'StatusMessage', 'TotalCount'])
+
     console.log('Result in API route:', result)
+
     if (result.statusid === 1) {
       return NextResponse.json({
         shapes: result.data,
@@ -16,6 +19,7 @@ export async function GET(request) {
     }
   } catch (error) {
     console.error(error)
+
     return NextResponse.json({ error: 'Error fetching shapes' }, { status: 500 })
   }
 }
@@ -40,6 +44,7 @@ export async function POST(request) {
       },
       ['StatusID', 'StatusMessage']
     )
+
     console.log('Result from sp_AdminCreateShape:', result)
 
     if (result.statusid === 1) {
@@ -49,6 +54,7 @@ export async function POST(request) {
     }
   } catch (error) {
     console.error(error)
+
     return NextResponse.json({ error: 'Error creating shape' }, { status: 500 })
   }
 }
@@ -76,6 +82,7 @@ export async function DELETE(request) {
     }
   } catch (error) {
     console.error('Error deleting shape:', error)
+
     return NextResponse.json({ error: 'Error deleting shape' }, { status: 500 })
   }
 }
@@ -107,6 +114,7 @@ export async function PUT(request) {
     }
   } catch (error) {
     console.error(error)
+
     return NextResponse.json({ error: 'Error updating shape' }, { status: 500 })
   }
 }

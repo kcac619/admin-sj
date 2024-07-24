@@ -15,6 +15,7 @@ const config = {
 const dbClientService = async () => {
   try {
     const pool = await sql.connect(config)
+
     return pool
   } catch (error) {
     console.error('Error connecting to database:', error)
@@ -50,10 +51,12 @@ async function callStoredProcedure(
     })
 
     const result = await request.execute(procedureName)
+
     console.log('Result from stored procedure:', result)
 
     // Construct the return object dynamically
     const returnObject = { data: result.recordset }
+
     outputParams.forEach(paramName => {
       returnObject[paramName.toLowerCase()] = result.output[paramName]
     })
