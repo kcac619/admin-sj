@@ -173,28 +173,28 @@ const ShapesPage = () => {
 
   const columns = useMemo(
     () => [
-      columnHelper.display({
-        id: 'select',
-        header: ({ table }) => (
-          <Checkbox
-            {...{
-              checked: table.getIsAllRowsSelected(),
-              indeterminate: table.getIsSomeRowsSelected(),
-              onChange: table.getToggleAllRowsSelectedHandler()
-            }}
-          />
-        ),
-        cell: ({ row }) => (
-          <Checkbox
-            {...{
-              checked: row.getIsSelected(),
-              disabled: !row.getCanSelect(),
-              indeterminate: row.getIsSomeSelected(),
-              onChange: row.getToggleSelectedHandler()
-            }}
-          />
-        )
-      }),
+      // columnHelper.display({
+      //   id: 'select',
+      //   header: ({ table }) => (
+      //     <Checkbox
+      //       {...{
+      //         checked: table.getIsAllRowsSelected(),
+      //         indeterminate: table.getIsSomeRowsSelected(),
+      //         onChange: table.getToggleAllRowsSelectedHandler()
+      //       }}
+      //     />
+      //   ),
+      //   cell: ({ row }) => (
+      //     <Checkbox
+      //       {...{
+      //         checked: row.getIsSelected(),
+      //         disabled: !row.getCanSelect(),
+      //         indeterminate: row.getIsSomeSelected(),
+      //         onChange: row.getToggleSelectedHandler()
+      //       }}
+      //     />
+      //   )
+      // }),
       columnHelper.accessor('ShapeID', {
         header: 'Shape ID',
         cell: info => info.getValue()
@@ -211,7 +211,7 @@ const ShapesPage = () => {
         id: 'actions',
         header: 'Actions',
         cell: ({ row }) => (
-          <div>
+          <div className='flex space-x-2'>
             <IconButton onClick={() => handleEdit(row.original)} color='primary'>
               <i className='ri-edit-box-line' />
             </IconButton>
@@ -407,9 +407,9 @@ const ShapesPage = () => {
           </Button>
         </DialogActions>
       </Dialog>
-      <div className='m-8'>
-        <div className='flex justify-between gap-4 p-5 flex-col items-start sm:flex-row sm:items-center'>
-          <Button
+      <div className='sm:mx-0 sm:px-0 md:m-4'>
+        <div className=' pt-0 flex justify-between gap-4 p-5 flex-col items-start sm:flex-row sm:items-center'>
+          {/* <Button
             color='secondary'
             variant='outlined'
             sx={{ borderColor: 'gray', color: 'gray' }}
@@ -417,7 +417,8 @@ const ShapesPage = () => {
             className='is-full sm:is-auto'
           >
             Export
-          </Button>
+          </Button> */}
+          <h1 className='text-2xl'>Shapes</h1>
           <div className='flex items-center gap-x-4 max-sm:gap-y-4 is-full flex-col sm:is-auto sm:flex-row'>
             <DebouncedInput
               value={globalFilter ?? ''}
@@ -445,7 +446,8 @@ const ShapesPage = () => {
                         backgroundColor:
                           theme.palette.mode === 'dark'
                             ? alpha(theme.palette.primary.main, 0.7)
-                            : alpha(theme.palette.primary.light, 0.7)
+                            : alpha(theme.palette.primary.light, 0.7),
+                        padding: '0px'
                       }}
                     >
                       {headerGroup.headers.map(header => (
@@ -461,11 +463,19 @@ const ShapesPage = () => {
                     <TableRow
                       key={row.id}
                       sx={{
-                        backgroundColor: row.original.IsDeleted ? alpha(theme.palette.error.main, 0.3) : 'inherit'
+                        backgroundColor: row.original.IsDeleted ? alpha(theme.palette.error.main, 0.3) : 'inherit',
+                        padding: '0px'
                       }}
                     >
                       {row.getVisibleCells().map(cell => (
-                        <TableCell key={cell.id}>{cell.column.columnDef.cell(cell.getContext())}</TableCell>
+                        <TableCell
+                          key={cell.id}
+                          sx={{
+                            paddingY: '2px'
+                          }}
+                        >
+                          {cell.column.columnDef.cell(cell.getContext())}
+                        </TableCell>
                       ))}
                     </TableRow>
                   ))}
