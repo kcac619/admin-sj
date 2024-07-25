@@ -50,7 +50,9 @@ const ShapesPage = () => {
   const [rowsPerPage, setRowsPerPage] = useState(10)
   const primaryColor = primaryColorConfig.find(color => color.name === 'primary-1')
 
-  const [filteredShapes, setFilteredShapes] = useState([])
+  const [filteredShapes, setFilteredShapes] = useState([
+    { ShapeID: 'Loading...', ShapeName: 'Loading...', ImageUrl: 'Loading...' }
+  ])
   const [globalFilter, setGlobalFilter] = useState('')
   const [addShapeOpen, setAddShapeOpen] = useState(false)
   const [editModalOpen, setEditModalOpen] = useState(false)
