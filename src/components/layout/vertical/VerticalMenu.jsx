@@ -1,16 +1,23 @@
 // MUI Imports
+import { useState } from 'react'
+
 import { useTheme } from '@mui/material/styles'
 
 // Third-party Imports
 import PerfectScrollbar from 'react-perfect-scrollbar'
 
 // Component Imports
+// import IconExpandLess from '@mui/icons-material/ExpandLess'
+
+// import IconExpandMore from '@mui/icons-material/ExpandMore'
+
+// import { Collapse, List, ListItem, ListItemIcon, ListItemText } from '@mui/material'
+
 import { Menu, MenuItem, SubMenu } from '@menu/vertical-menu'
 
 // Hook Imports
+
 import useVerticalNav from '@menu/hooks/useVerticalNav'
-import IconExpandLess from '@mui/icons-material/ExpandLess'
-import IconExpandMore from '@mui/icons-material/ExpandMore'
 
 // Styled Component Imports
 import StyledVerticalNavExpandIcon from '@menu/styles/vertical/StyledVerticalNavExpandIcon'
@@ -18,8 +25,6 @@ import StyledVerticalNavExpandIcon from '@menu/styles/vertical/StyledVerticalNav
 // Style Imports
 import menuItemStyles from '@core/styles/vertical/menuItemStyles'
 import menuSectionStyles from '@core/styles/vertical/menuSectionStyles'
-import { Collapse, List, ListItem, ListItemIcon, ListItemText } from '@mui/material'
-import { useState } from 'react'
 
 const RenderExpandIcon = ({ open, transitionDuration }) => (
   <StyledVerticalNavExpandIcon open={open} transitionDuration={transitionDuration}>

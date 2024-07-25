@@ -7,7 +7,7 @@ export async function GET(request) {
   try {
     const result = await callStoredProcedure('sp_GetShapes', {}, ['StatusID', 'StatusMessage', 'TotalCount'])
 
-    console.log('Result in API route:', result)
+    // console.log('Result in API route:', result)
 
     if (result.statusid === 1) {
       return NextResponse.json({
@@ -45,7 +45,7 @@ export async function POST(request) {
       ['StatusID', 'StatusMessage']
     )
 
-    console.log('Result from sp_AdminCreateShape:', result)
+    // console.log('Result from sp_AdminCreateShape:', result)
 
     if (result.statusid === 1) {
       return NextResponse.json({ message: result.message }, { status: 201 })

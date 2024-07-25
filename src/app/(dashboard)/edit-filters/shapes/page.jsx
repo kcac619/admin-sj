@@ -1,10 +1,10 @@
 'use client'
-import { useTheme } from '@mui/material/styles'
-import primaryColorConfig from '../../../../configs/primaryColorConfig' // Adjust the import path as needed
 
 import { useEffect, useState, useMemo, useRef } from 'react'
-import axios from 'axios'
 
+import { useTheme } from '@mui/material/styles'
+import axios from 'axios'
+// stop ctrl Z
 // MUI Imports
 import Card from '@mui/material/Card'
 import Checkbox from '@mui/material/Checkbox'
@@ -32,31 +32,30 @@ import {
   flexRender,
   createColumnHelper
 } from '@tanstack/react-table'
+import { alpha } from '@mui/material/styles'
 import { Button, Divider, Drawer, TextField } from '@mui/material'
 import { Controller, useForm } from 'react-hook-form'
+
+import primaryColorConfig from '../../../../configs/primaryColorConfig' // Adjust the import path as needed
+import { rankItem } from '@tanstack/match-sorter-utils'
 
 // Define column helper
 const columnHelper = createColumnHelper()
 
 const ShapesPage = () => {
   const theme = useTheme()
-  const [shapes, setShapes] = useState([{ ShapeID: 'Loading...', ShapeName: 'Loading...', ImageUrl: 'Loading...' }])
+  const [shapes, setShapes] = useState([])
   const [error, setError] = useState('')
   const [page, setPage] = useState(0)
   const [rowsPerPage, setRowsPerPage] = useState(10)
   const primaryColor = primaryColorConfig.find(color => color.name === 'primary-1')
-  //   const [filteredData, setFilteredData] = useState(data)
+
+  const [filteredShapes, setFilteredShapes] = useState([])
   const [globalFilter, setGlobalFilter] = useState('')
   const [addShapeOpen, setAddShapeOpen] = useState(false)
   const [editModalOpen, setEditModalOpen] = useState(false)
   const [shapeToEdit, setShapeToEdit] = useState(null)
   const searchInputRef = useRef(null)
-
-  useEffect(() => {
-    if (searchInputRef.current) {
-      searchInputRef.current.focus()
-    }
-  }, [globalFilter])
 
   const {
     control: editControl,
@@ -74,15 +73,11 @@ const ShapesPage = () => {
   const onEditSubmit = async data => {
     try {
       const response = await axios.put('/api/filters/shapes', data)
+
       console.log(response.data.message)
 
-      // Close the modal
       setEditModalOpen(false)
-
-      // Reset the form
       resetEditForm()
-
-      // Refetch shapes to update the table
       fetchShapes()
     } catch (error) {
       console.error('Error updating shape:', error)
@@ -104,17 +99,11 @@ const ShapesPage = () => {
 
   const onSubmit = async data => {
     try {
-      console.log('form data before submission:', data)
       const response = await axios.post('/api/filters/shapes', data)
-      console.log('form submission response.data:', response.data) // Log success message
 
-      // Close the drawer
+      console.log('form submission response.data:', response.data)
       handleClose()
-
-      // Reset the form
       resetForm()
-
-      // Refetch shapes to update the table (optional but recommended)
       fetchShapes()
     } catch (error) {
       console.error('Error creating shape:', error)
@@ -129,9 +118,12 @@ const ShapesPage = () => {
           Accept: 'application/json'
         }
       })
-      console.log('Response Data:', response.data) // Log the full response data
+
+      console.log('Shapes Response Data:', response.data)
+
       if (response.data.shapes) {
         setShapes(response.data.shapes)
+        setFilteredShapes(response.data.shapes)
       } else {
         setError('Shapes data not found')
       }
@@ -140,9 +132,21 @@ const ShapesPage = () => {
       setError('Error fetching shapes')
     }
   }
+
   useEffect(() => {
     fetchShapes()
   }, [])
+
+  useEffect(() => {
+    if (searchInputRef.current) {
+      searchInputRef.current.focus()
+    }
+  }, [globalFilter])
+
+  useEffect(() => {
+    const filteredData = shapes.filter(shape => shape.ShapeName.toLowerCase().includes(globalFilter.toLowerCase()))
+    setFilteredShapes(filteredData)
+  }, [globalFilter, shapes])
 
   const handleEdit = shape => {
     setShapeToEdit(shape)
@@ -160,9 +164,6 @@ const ShapesPage = () => {
     try {
       const response = await axios.delete(`/api/filters/shapes?shapeId=${shapeId}`)
       console.log(response.data.message)
-
-      // Update shapes state - you can either refetch all shapes
-      // or remove the deleted shape from the existing shapes array
       fetchShapes()
     } catch (error) {
       console.error('Error deleting shape:', error)
@@ -224,31 +225,40 @@ const ShapesPage = () => {
     []
   )
 
-  const DebouncedInput = ({ value: initialValue, onChange, debounce = 500, ...props }) => {
-    // States
+  const DebouncedInput = ({ value: initialValue, inputRef, onChange, debounce = 500, ...props }) => {
     const [value, setValue] = useState(initialValue)
+    const [shouldFocus, setShouldFocus] = useState(false)
 
     useEffect(() => {
       setValue(initialValue)
     }, [initialValue])
+
     useEffect(() => {
       const timeout = setTimeout(() => {
         onChange(value)
+        setShouldFocus(true)
       }, debounce)
 
       return () => clearTimeout(timeout)
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [value])
+    }, [value, onChange, debounce])
+
+    useEffect(() => {
+      if (shouldFocus && inputRef.current) {
+        inputRef.current.focus()
+        setShouldFocus(false)
+      }
+    }, [shouldFocus, inputRef])
 
     return (
       <TextField
         {...props}
         value={value}
         onChange={e => setValue(e.target.value)}
+        inputRef={inputRef}
         size='small'
         sx={{
           '& .MuiInputBase-input::placeholder': {
-            color: 'gray' // Change this to your desired color
+            color: 'gray'
           },
           borderColor: 'gray'
         }}
@@ -256,29 +266,25 @@ const ShapesPage = () => {
     )
   }
 
-  const table = useReactTable(
-    {
-      data: shapes,
-      columns,
-      getCoreRowModel: getCoreRowModel(),
-      getPaginationRowModel: getPaginationRowModel(),
-      state: {
-        pagination: {
-          pageIndex: page,
-          pageSize: rowsPerPage
-        },
-        globalFilter: globalFilter
-      },
-      onGlobalFilterChange: setGlobalFilter,
-      globalFilterFn: (row, columnId, value) => {
-        const searchValue = value.toLowerCase()
-        return row.getValue('ShapeName').toLowerCase().includes(searchValue)
+  const table = useReactTable({
+    data: filteredShapes,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    state: {
+      pagination: {
+        pageIndex: page,
+        pageSize: rowsPerPage
       }
-    },
-    [globalFilter]
-  )
+    }
+  })
+
   const handleClose = () => {
     setAddShapeOpen(false)
+  }
+
+  const exportData = () => {
+    // Implement the export functionality here
   }
 
   return (
@@ -334,7 +340,6 @@ const ShapesPage = () => {
                   resetForm()
                 }}
               >
-                {/* // change this ro handle reset later */}
                 Cancel
               </Button>
             </div>
@@ -354,156 +359,136 @@ const ShapesPage = () => {
                   margin='dense'
                   label='Shape ID'
                   fullWidth
-                  disabled // Shape ID should not be editable
-                  //   value={shapeToEdit ? shapeToEdit.ShapeID : ''}
+                  disabled
+                  {...(editErrors.ShapeID && { error: true, helperText: 'This field is required.' })}
                 />
               )}
             />
             <Controller
               name='ShapeName'
               control={editControl}
-              rules={{ required: true }}
               render={({ field }) => (
                 <TextField
                   {...field}
                   margin='dense'
                   label='Shape Name'
                   fullWidth
-                  error={!!editErrors.ShapeName}
-                  helperText={editErrors.ShapeName ? 'This field is required' : ''}
-                  //   value={shapeToEdit ? shapeToEdit.ShapeName : ''}
+                  {...(editErrors.ShapeName && { error: true, helperText: 'This field is required.' })}
                 />
               )}
             />
             <Controller
               name='ImageUrl'
               control={editControl}
-              rules={{ required: true }}
-              render={({ field }) => {
-                console.log('Field object for ImageUrl:', field) // Add this line
-                return (
-                  <TextField
-                    {...field}
-                    margin='dense'
-                    label='Image URL'
-                    fullWidth
-                    error={!!editErrors.ImageUrl}
-                    helperText={editErrors.ImageUrl ? 'This field is required' : ''}
-                    // value={shapeToEdit ? shapeToEdit.ImageUrl : ''}
-                  />
-                )
-              }}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  margin='dense'
+                  label='ImageUrl'
+                  fullWidth
+                  {...(editErrors.ImageUrl && { error: true, helperText: 'This field is required.' })}
+                />
+              )}
             />
-            {/* Add more fields for IsActive, etc. if needed */}
-
-            <DialogActions>
-              <Button onClick={() => setEditModalOpen(false)} color='error'>
-                Cancel
-              </Button>
-              <Button type='submit' variant='contained'>
-                Submit
-              </Button>
-            </DialogActions>
           </form>
         </DialogContent>
-      </Dialog>
-      <Typography variant='h4' component='div' gutterBottom>
-        Shapes Form
-      </Typography>
-
-      <div className='flex justify-between gap-4 p-5 flex-col items-start sm:flex-row sm:items-center'>
-        <Button
-          color='secondary'
-          variant='outlined'
-          sx={{ borderColor: 'gray', color: 'gray' }}
-          startIcon={<i className='ri-upload-2-line' />}
-          className='is-full sm:is-auto'
-        >
-          Export
-        </Button>
-        <div className='flex items-center gap-x-4 max-sm:gap-y-4 is-full flex-col sm:is-auto sm:flex-row'>
-          <DebouncedInput
-            value={globalFilter ?? ''}
-            onChange={value => setGlobalFilter(String(value))}
-            placeholder='Search Shapes'
-            inputRef={searchInputRef}
-            className='is-full sm:is-auto'
-          />
-          <Button variant='contained' onClick={() => setAddShapeOpen(!addShapeOpen)} className='is-full sm:is-auto'>
-            Add New Shape
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setEditModalOpen(false)
+              resetEditForm()
+            }}
+            color='secondary'
+          >
+            Cancel
           </Button>
+          <Button onClick={handleEditSubmit(onEditSubmit)} color='primary'>
+            Save
+          </Button>
+        </DialogActions>
+      </Dialog>
+      <div className='m-8'>
+        <div className='flex justify-between gap-4 p-5 flex-col items-start sm:flex-row sm:items-center'>
+          <Button
+            color='secondary'
+            variant='outlined'
+            sx={{ borderColor: 'gray', color: 'gray' }}
+            startIcon={<i className='ri-upload-2-line' />}
+            className='is-full sm:is-auto'
+          >
+            Export
+          </Button>
+          <div className='flex items-center gap-x-4 max-sm:gap-y-4 is-full flex-col sm:is-auto sm:flex-row'>
+            <DebouncedInput
+              value={globalFilter ?? ''}
+              onChange={value => {
+                setGlobalFilter(String(value))
+              }}
+              placeholder='Search Shapes'
+              inputRef={searchInputRef}
+              className='is-full sm:is-auto'
+            />
+            <Button variant='contained' onClick={() => setAddShapeOpen(!addShapeOpen)} className='is-full sm:is-auto'>
+              Add New Shape
+            </Button>
+          </div>
+        </div>
+        <div className='mt-4'>
+          <Card sx={{ width: '100%', overflow: 'auto' }}>
+            <TableContainer>
+              <Table>
+                <TableHead>
+                  {table.getHeaderGroups().map(headerGroup => (
+                    <TableRow
+                      key={headerGroup.id}
+                      sx={{
+                        backgroundColor:
+                          theme.palette.mode === 'dark'
+                            ? alpha(theme.palette.primary.main, 0.7)
+                            : alpha(theme.palette.primary.light, 0.7)
+                      }}
+                    >
+                      {headerGroup.headers.map(header => (
+                        <TableCell key={header.id} colSpan={header.colSpan}>
+                          {header.isPlaceholder ? null : <div>{header.column.columnDef.header}</div>}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))}
+                </TableHead>
+                <TableBody>
+                  {table.getRowModel().rows.map(row => (
+                    <TableRow
+                      key={row.id}
+                      sx={{
+                        backgroundColor: row.original.IsDeleted ? alpha(theme.palette.error.main, 0.3) : 'inherit'
+                      }}
+                    >
+                      {row.getVisibleCells().map(cell => (
+                        <TableCell key={cell.id}>{cell.column.columnDef.cell(cell.getContext())}</TableCell>
+                      ))}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+            <TablePagination
+              component='div'
+              count={filteredShapes.length}
+              page={page}
+              onPageChange={(event, newPage) => setPage(newPage)}
+              rowsPerPage={rowsPerPage}
+              onRowsPerPageChange={event => setRowsPerPage(parseInt(event.target.value, 10))}
+              sx={{
+                backgroundColor:
+                  theme.palette.mode === 'dark'
+                    ? alpha(theme.palette.primary.main, 0.7)
+                    : alpha(theme.palette.primary.light, 0.7)
+              }}
+            />
+          </Card>
         </div>
       </div>
-      <Card
-        style={{
-          borderRadius: '10px',
-          boxShadow: '4px 4px 4px 4px rgba(0,0,0,0.2) ',
-          backgroundColor: '#282a42'
-          //   overflowX: 'scroll'
-        }}
-      >
-        {error && <Typography color='error'>{error}</Typography>}
-        <TableContainer>
-          <Table>
-            <TableHead>
-              {table.getHeaderGroups().map(headerGroup => (
-                <TableRow key={headerGroup.id}>
-                  {headerGroup.headers.map(header => (
-                    <TableCell
-                      key={header.id}
-                      style={{
-                        backgroundColor: theme.palette.mode === 'dark' ? '#3a3e5b' : primaryColor.light,
-                        color: theme.palette.mode === 'dark' ? '#eee9ef' : '#444'
-                      }}
-                    >
-                      {flexRender(header.column.columnDef.header, header.getContext())}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))}
-            </TableHead>
-            <TableBody>
-              {table.getRowModel().rows.map(row => (
-                <TableRow
-                  key={row.id}
-                  style={{ padding: 0, margin: 0 }}
-                  className={row.original.IsDeleted ? 'deleted-row' : ''}
-                >
-                  {row.getVisibleCells().map(cell => (
-                    <TableCell
-                      key={cell.id}
-                      style={{
-                        paddingTop: '1px',
-                        paddingBottom: '1px',
-                        backgroundColor: theme.palette.mode === 'dark' ? '#282a42' : '#fff',
-                        color: theme.palette.mode === 'dark' ? '#eee9ef' : '#555'
-                      }}
-                    >
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-        <TablePagination
-          rowsPerPageOptions={[10, 25, 50]}
-          component='div'
-          count={table.getFilteredRowModel().rows.length}
-          rowsPerPage={rowsPerPage}
-          page={page}
-          onPageChange={(_, newPage) => setPage(newPage)}
-          style={{
-            backgroundColor: theme.palette.mode === 'dark' ? '#3a3e5b' : primaryColor.light,
-            color: theme.palette.mode === 'dark' ? '#eee9ef' : '#444'
-          }}
-          onRowsPerPageChange={event => {
-            setRowsPerPage(parseInt(event.target.value, 10))
-            setPage(0)
-          }}
-        />
-      </Card>
     </>
   )
 }

@@ -52,7 +52,7 @@ async function callStoredProcedure(
 
     const result = await request.execute(procedureName)
 
-    console.log('Result from stored procedure:', result)
+    // console.log('Result from stored procedure:', result)
 
     // Construct the return object dynamically
     const returnObject = { data: result.recordset }
