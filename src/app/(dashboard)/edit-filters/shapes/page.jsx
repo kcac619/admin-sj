@@ -36,7 +36,7 @@ import { Controller, useForm } from 'react-hook-form'
 
 // For Image Display
 import Image from 'next/image'
-import { Input } from '@mui/material'
+import { DialogContentText, Input } from '@mui/material'
 import { TextFields } from '@mui/icons-material'
 
 // Define column helper
@@ -50,12 +50,17 @@ const ShapesPage = () => {
   const [rowsPerPage, setRowsPerPage] = useState(10)
   const primaryColor = primaryColorConfig.find(color => color.name === 'primary-1')
 
-  const [filteredShapes, setFilteredShapes] = useState([])
+  const [filteredShapes, setFilteredShapes] = useState([
+    { ShapeName: 'Loading...', ShapeID: 'Loading...', ImageKey: 'Loading...' }
+  ])
   const [globalFilter, setGlobalFilter] = useState('')
   const [addShapeOpen, setAddShapeOpen] = useState(false)
   const [editModalOpen, setEditModalOpen] = useState(false)
   const [shapeToEdit, setShapeToEdit] = useState(null)
   const searchInputRef = useRef(null)
+
+  const [shapeToDelete, setShapeToDelete] = useState(null)
+  const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false)
 
   // useForm for Add Shape
   const {
@@ -89,20 +94,41 @@ const ShapesPage = () => {
     try {
       const formData = new FormData()
       formData.append('ShapeName', data.ShapeName)
-      formData.append('image', data.image[0]) // Append the image file
 
-      const response = await axios.post('/api/filters/shapes', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data' // Important for file uploads
+      if (data.image && data.image[0]) {
+        const file = data.image[0]
+        if (!['image/jpeg', 'image/png', 'image/gif'].includes(file.type)) {
+          alert('Only JPG, PNG, and GIF files are allowed.')
+          return
         }
-      })
+        if (file.size > 1 * 1024 * 1024) {
+          // 1MB
+          alert('File size should not exceed 1MB.')
+          return
+        }
 
-      console.log('Shape added successfully:', response.data)
+        const reader = new FileReader()
+        reader.readAsDataURL(file)
+        reader.onloadend = async () => {
+          const base64data = reader.result
+          const imageData = {
+            fileName: `${Date.now()}${file.name}`,
+            mimeType: file.type,
+            base64: base64data
+          }
+          formData.append('imageData', JSON.stringify(imageData))
 
-      // Close the drawer
-      handleClose()
-      resetAddForm()
-      fetchShapes()
+          // Proceed with the POST request after file is read
+          const response = await axios.post('/api/filters/shapes', formData)
+          console.log('Shape added successfully:', response.data)
+          handleClose()
+          resetAddForm()
+          fetchShapes()
+        }
+      } else {
+        // Handle the case where no image is selected
+        alert('Please select an image.')
+      }
     } catch (error) {
       console.error('Error creating shape:', error)
       setError(error.message)
@@ -115,26 +141,45 @@ const ShapesPage = () => {
       const formData = new FormData()
       formData.append('ShapeID', data.ShapeID)
       formData.append('ShapeName', data.ShapeName)
-      console.log(data.image[0])
-      if (data.image[0]) {
-        // Only append if a new image is selected
-        formData.append('image', data.image[0])
+
+      if (data.image && data.image[0]) {
+        const file = data.image[0]
+        if (!['image/jpeg', 'image/png', 'image/gif'].includes(file.type)) {
+          alert('Only JPG, PNG, and GIF files are allowed.')
+          return
+        }
+        if (file.size > 1 * 1024 * 1024) {
+          // 1MB
+          alert('File size should not exceed 1MB.')
+          return
+        }
+
+        const reader = new FileReader()
+        reader.readAsDataURL(file)
+        reader.onloadend = async () => {
+          const base64data = reader.result
+          const imageData = {
+            fileName: `${Date.now()}${file.name}`,
+            mimeType: file.type,
+            base64: base64data
+          }
+          formData.append('imageData', JSON.stringify(imageData))
+
+          // Proceed with the request after the file is read
+          const response = await axios.put('/api/filters/shapes', formData)
+          console.log('Shape updated successfully:', response.data)
+          setEditModalOpen(false)
+          resetEditForm()
+          fetchShapes()
+        }
+      } else {
+        // Proceed with the request if there's no image
+        const response = await axios.put('/api/filters/shapes', formData)
+        console.log('Shape updated successfully:', response.data)
+        setEditModalOpen(false)
+        resetEditForm()
+        fetchShapes()
       }
-
-      const response = await axios.put(
-        '/api/filters/shapes',
-        formData
-        //   , {
-        //   headers: {
-        //     'Content-Type': 'multipart/form-data'
-        //   }
-        // }
-      )
-
-      console.log('Shape updated successfully:', response.data)
-      setEditModalOpen(false)
-      resetEditForm()
-      fetchShapes()
     } catch (error) {
       console.error('Error updating shape:', error)
       setError(error.message)
@@ -150,7 +195,7 @@ const ShapesPage = () => {
         }
       })
 
-      // console.log('Shapes Response Data:', response.data)
+      console.log('Shapes Response Data:', response.data)
 
       if (response.data.shapes) {
         setShapes(response.data.shapes)
@@ -175,7 +220,9 @@ const ShapesPage = () => {
   }, [globalFilter])
 
   useEffect(() => {
-    const filteredData = shapes.filter(shape => shape.ShapeName.toLowerCase().includes(globalFilter.toLowerCase()))
+    const filteredData = shapes.filter(
+      shape => shape.ShapeName.toLowerCase().includes(globalFilter.toLowerCase()) && !shape.IsDeleted
+    )
     setFilteredShapes(filteredData)
   }, [globalFilter, shapes])
 
@@ -194,14 +241,24 @@ const ShapesPage = () => {
   }
 
   // Handle Delete Shape
-  const handleDelete = async shapeId => {
+  const handleDelete = shapeId => {
+    setShapeToDelete(shapeId)
+    setDeleteConfirmationOpen(true)
+  }
+
+  const handleConfirmDelete = async () => {
     try {
-      const response = await axios.delete(`/api/filters/shapes?shapeId=${shapeId}`)
-      console.log(response.data.message)
-      fetchShapes()
+      if (shapeToDelete) {
+        const response = await axios.delete(`/api/filters/shapes?shapeId=${shapeToDelete}`)
+        console.log(response.data.message)
+        fetchShapes()
+        setShapeToDelete(null)
+      }
     } catch (error) {
       console.error('Error deleting shape:', error)
       setError(error.message)
+    } finally {
+      setDeleteConfirmationOpen(false)
     }
   }
 
@@ -227,12 +284,15 @@ const ShapesPage = () => {
         cell: ({ row }) => (
           <div>
             {row.original.imageUrl ? (
-              <Image
-                src={row.original.imageUrl}
-                alt={row.original.ShapeName}
-                width={50} // Adjust width as needed
-                height={50} // Adjust height as needed
-              />
+              <div className='bg-white inline-block p-1 mt-1 shadow-md'>
+                <Image
+                  src={row.original.imageUrl}
+                  alt={row.original.ShapeName}
+                  width={30} // Adjust width as needed
+                  height={30}
+                  className='block max-w-full h-auto'
+                />
+              </div>
             ) : (
               <Typography variant='body2'>No Image</Typography>
             )}
@@ -300,6 +360,7 @@ const ShapesPage = () => {
   }
 
   // React Table Instance
+  // const visibleShapes = filteredShapes.filter(shape => !shape.IsDeleted) // Filter out deleted shapes
   const table = useReactTable({
     data: filteredShapes,
     columns,
@@ -324,8 +385,37 @@ const ShapesPage = () => {
 
   return (
     <>
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteConfirmationOpen} onClose={() => setDeleteConfirmationOpen(false)}>
+        <DialogTitle>Confirm Delete</DialogTitle>
+        <DialogContent>
+          <DialogContentText>Are you sure you want to delete this shape?</DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteConfirmationOpen(false)} color='primary'>
+            Cancel
+          </Button>
+          <Button onClick={handleConfirmDelete} color='error'>
+            Yes, Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
       {/* Add Shape Drawer */}
-      <Drawer open={addShapeOpen} anchor='right' variant='temporary' onClose={handleClose} sx={{ width: '400px' }}>
+      <Drawer
+        open={addShapeOpen}
+        anchor='right'
+        variant='temporary'
+        onClose={handleClose}
+        sx={{ width: '400px' }}
+        PaperProps={{
+          sx: {
+            width: {
+              xs: '100%',
+              lg: '50%'
+            }
+          }
+        }}
+      >
         <div className='flex items-center justify-between pli-5 plb-4'>
           <Typography variant='h5'>Add New Shape</Typography>
           <IconButton size='small' onClick={handleClose}>
@@ -354,39 +444,46 @@ const ShapesPage = () => {
             <Controller
               name='image'
               control={control}
-              rules={{ required: true }}
+              rules={{ required: false }}
               render={({ field }) => {
                 console.log('Image Field Object', field)
 
                 return (
-                  <Stack direction='column' spacing={2}>
+                  <Stack direction='column' spacing={2} sx={{ mt: 2 }}>
                     <Button variant='contained' component='label'>
-                      Upload Image
+                      Upload New Image (Optional)
                       <input
                         type='file'
                         hidden
-                        {...field} // Spread the field props for react-hook-form
-                        onChange={e => field.onChange(e.target.files)} // Handle file selection
+                        accept='.jpg,.jpeg,.png,.gif'
+                        {...field}
+                        onChange={e => {
+                          const file = e.target.files[0]
+                          if (file) {
+                            if (!['image/jpeg', 'image/png', 'image/gif'].includes(file.type)) {
+                              alert('Only JPG, PNG, and GIF files are allowed.')
+                              return
+                            }
+                            if (file.size > 1 * 1024 * 1024) {
+                              // 1MB
+                              alert('File size should not exceed 1MB.')
+                              return
+                            }
+                          }
+                          field.onChange(e.target.files)
+                        }}
+                        value={undefined}
                       />
                     </Button>
-                    {field.value &&
-                      field.value[0] && ( // Display selected file name
-                        <Typography variant='body2'>Selected file: {field.value[0].name}</Typography>
-                      )}
-                    {addErrors.image && (
-                      <Typography variant='caption' color='error'>
-                        {addErrors.image.message || 'This field is required'}
-                      </Typography>
+                    {field.value && field.value[0] && (
+                      <Typography variant='body2'>Selected file: {field.value[0].name}</Typography>
                     )}
                   </Stack>
                 )
               }}
             />
 
-            <div className='flex items-center gap-4'>
-              <Button variant='contained' type='submit'>
-                Submit
-              </Button>
+            <div className='flex items-end gap-4'>
               <Button
                 variant='outlined'
                 color='error'
@@ -397,22 +494,43 @@ const ShapesPage = () => {
               >
                 Cancel
               </Button>
+              <Button variant='contained' type='submit'>
+                Submit
+              </Button>
             </div>
           </form>
         </div>
       </Drawer>
 
-      {/* Edit Shape Modal */}
-      <Dialog
+      {/* Edit Shape Drawer (Previously a Dialog) */}
+      <Drawer
         open={editModalOpen}
+        anchor='right'
+        variant='temporary'
         onClose={() => {
           setEditModalOpen(false)
-          resetEditForm() // Reset the form when the modal closes
+          resetEditForm()
+        }}
+        PaperProps={{
+          sx: {
+            width: {
+              xs: '100%',
+              lg: '50%'
+            }
+          }
         }}
       >
-        <DialogTitle>Edit Shape</DialogTitle>
-        <DialogContent>
-          <form onSubmit={handleEditSubmit(onEditSubmit)} enctype='multipart/form-data'>
+        <div className='flex items-center justify-between pli-5 plb-4'>
+          <Typography align='center' variant='h3'>
+            Edit Shape
+          </Typography>
+          <IconButton size='small' onClick={() => setEditModalOpen(false)}>
+            <i className='ri-close-line text-2xl' />
+          </IconButton>
+        </div>
+        <Divider />
+        <div className='p-5'>
+          <form onSubmit={handleEditSubmit(onEditSubmit)} className='flex flex-col gap-5'>
             <Controller
               name='ShapeID'
               control={editControl}
@@ -434,7 +552,7 @@ const ShapesPage = () => {
               )}
             />
 
-            {/* Image Upload in Edit Modal */}
+            {/* Image Upload in Edit Shape Drawer */}
             <Controller
               name='image'
               control={editControl}
@@ -445,8 +563,23 @@ const ShapesPage = () => {
                     <input
                       type='file'
                       hidden
+                      accept='.jpg,.jpeg,.png,.gif'
                       {...field}
-                      onChange={e => field.onChange(e.target.files)}
+                      onChange={e => {
+                        const file = e.target.files[0]
+                        if (file) {
+                          if (!['image/jpeg', 'image/png', 'image/gif'].includes(file.type)) {
+                            alert('Only JPG, PNG, and GIF files are allowed.')
+                            return
+                          }
+                          if (file.size > 1 * 1024 * 1024) {
+                            // 1MB
+                            alert('File size should not exceed 1MB.')
+                            return
+                          }
+                        }
+                        field.onChange(e.target.files)
+                      }}
                       value={undefined}
                     />
                   </Button>
@@ -466,8 +599,8 @@ const ShapesPage = () => {
               </Button>
             </DialogActions>
           </form>
-        </DialogContent>
-      </Dialog>
+        </div>
+      </Drawer>
 
       {/* Title and Search Bar */}
       <Typography variant='h4' component='div' gutterBottom>

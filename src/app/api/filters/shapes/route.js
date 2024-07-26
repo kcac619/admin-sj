@@ -15,9 +15,10 @@ export async function GET(request) {
       const shapesWithUrls = await Promise.all(
         result.data.map(async shape => {
           let imageUrl = null
-          if (shape.imageKey) {
+          if (shape.ImageKey) {
             try {
-              imageUrl = await getObjectSignedUrl(shape.imageKey)
+              imageUrl = await getObjectSignedUrl(shape.ImageKey)
+              console.log(`Signed URL for shape ${shape.ShapeID}:`, imageUrl)
             } catch (error) {
               console.error(`Error generating signed URL for shape ${shape.ShapeID}:`, error)
             }
@@ -45,20 +46,22 @@ export async function GET(request) {
 export async function POST(request) {
   try {
     const formData = await request.formData()
-    const file = formData.get('image') // Assuming 'image' is the file input name
     const ShapeName = formData.get('ShapeName')
 
-    // Image upload using multer and s3.js
-    const storage = multer.memoryStorage()
-    const upload = multer({ storage: storage })
-    const uploadResult = await upload.single('image')(request)
+    const imageDataString = formData.get('imageData')
+    let uploadedImageKey = null
 
-    if (uploadResult.error) {
-      return NextResponse.json({ error: uploadResult.error }, { status: 400 })
+    if (imageDataString) {
+      const imageData = JSON.parse(imageDataString)
+      const { fileName, base64, mimeType } = imageData
+      const buffer = Buffer.from(base64.split(',')[1], 'base64')
+      await uploadFile(buffer, fileName, mimeType)
+      uploadedImageKey = fileName
+    } else {
+      // Handle the case where no imageData is received
+      console.error('No image data received in POST request.')
+      return NextResponse.json({ error: 'Image is required' }, { status: 400 })
     }
-
-    const uploadedImageKey = uploadResult.file.originalname // S3 object key
-    await uploadFile(uploadResult.file.buffer, uploadedImageKey, uploadResult.file.mimetype)
 
     // Assuming you'll handle CreatedBy and ModifiedBy in your application
     const CreatedBy = 1 // Replace with actual user ID
@@ -71,12 +74,10 @@ export async function POST(request) {
         ImageKey: uploadedImageKey,
         CreatedBy: CreatedBy,
         ModifiedBy: ModifiedBy,
-        IsActive: 1 // Set as active by default
+        IsActive: 1
       },
       ['StatusID', 'StatusMessage']
     )
-
-    // console.log('Result from sp_AdminCreateShape:', result)
 
     if (result.statusid === 1) {
       return NextResponse.json({ message: result.statusmessage }, { status: 201 })
@@ -84,8 +85,7 @@ export async function POST(request) {
       return NextResponse.json({ error: result.statusmessage }, { status: 400 })
     }
   } catch (error) {
-    console.error(error)
-
+    console.error('Error in POST handler route.js:', error)
     return NextResponse.json({ error: 'Error creating shape' }, { status: 500 })
   }
 }
@@ -118,60 +118,67 @@ export async function DELETE(request) {
   }
 }
 
+export const config = {
+  api: {
+    bodyParser: true
+  }
+}
+
 export async function PUT(request) {
   try {
     const formData = await request.formData()
     console.log('Form data in PUT handler route.js:', formData)
 
-    // Image upload using multer and s3.js
-    const storage = multer.memoryStorage()
-    const upload = multer({ storage: storage })
+    const imageDataString = formData.get('imageData')
+    let uploadedImageKey = null
 
-    // Use multer middleware
-    // console.log('request before upload single image', request)
-    return await upload.single('image')(request, {}, async err => {
-      // Add "return await" here
-      if (err) {
-        console.error('Error uploading image:', err)
-        return NextResponse.json({ error: err.message }, { status: 400 })
-      }
-      console.log('Request.image inside upload.single-image route.js:', request.image)
-      let uploadedImageKey = null
-      if (request.image) {
-        uploadedImageKey = request.image[0].originalname
-        await uploadFile(request.image[0].buffer, uploadedImageKey, request.image[0].mimetype)
-      }
+    if (imageDataString) {
+      const imageData = JSON.parse(imageDataString)
+      const { fileName, base64, mimeType } = imageData
+      const buffer = Buffer.from(base64.split(',')[1], 'base64')
+      await uploadFile(buffer, fileName, mimeType)
+      uploadedImageKey = fileName // S3 object key
+    }
 
-      const ShapeID = parseInt(formData.get('ShapeID'), 10)
-      const ShapeName = formData.get('ShapeName')
-      const IsActive = formData.get('IsActive')
+    const ShapeID = parseInt(formData.get('ShapeID'), 10)
+    const ShapeName = formData.get('ShapeName')
+    const IsActive = formData.get('IsActive')
+    const ModifiedBy = 1
 
-      // Assuming you handle ModifiedBy in your application
-      const ModifiedBy = 1
+    console.log(
+      'ShapeID:',
+      ShapeID,
+      'ShapeName:',
+      ShapeName,
+      'UploadedImageKey:',
+      uploadedImageKey,
+      'ModifiedBy:',
+      ModifiedBy,
+      'IsActive:',
+      IsActive
+    )
 
-      console.log(ShapeID, ShapeName, uploadedImageKey, ModifiedBy, IsActive)
-      // Call sp_AdminUpdateShape
-      const result = await callStoredProcedure(
-        'sp_AdminUpdateShape',
-        {
-          ShapeID: ShapeID,
-          ShapeName: ShapeName,
-          ImageKey: uploadedImageKey,
-          ModifiedBy: ModifiedBy,
-          IsActive: 1 // Set as active by default
-        },
-        ['StatusID', 'StatusMessage']
-      )
-      console.log('request after calling spadminupdate shape', request)
+    const result = await callStoredProcedure(
+      'sp_AdminUpdateShape',
+      {
+        ShapeID: ShapeID,
+        ShapeName: ShapeName,
+        ImageKey: uploadedImageKey,
+        ModifiedBy: ModifiedBy,
+        IsActive: 1
+      },
+      ['StatusID', 'StatusMessage']
+    )
 
-      if (result.statusid === 1) {
-        return NextResponse.json({ message: result.statusmessage }, { status: 200 })
-      } else {
-        return NextResponse.json({ error: result.statusmessage }, { status: 400 })
-      }
-    }) // End of multer middleware callback
+    console.log('Result from sp_AdminUpdateShape:', result)
+
+    if (result.statusid === 1) {
+      return NextResponse.json({ message: result.statusmessage }, { status: 200 })
+    } else {
+      return NextResponse.json({ error: result.statusmessage }, { status: 400 })
+    }
   } catch (error) {
-    console.error(error)
+    console.error('Error in PUT handler route.js:', error)
     return NextResponse.json({ error: 'Error updating shape' }, { status: 500 })
   }
 }

@@ -50,10 +50,15 @@ export async function getObjectSignedUrl(key) {
     Key: key
   }
 
-  // https://aws.amazon.com/blogs/developer/generate-presigned-url-modular-aws-sdk-javascript/
-  const command = new GetObjectCommand(params)
-  const seconds = 60
-  const url = await getSignedUrl(s3Client, command, { expiresIn: seconds })
-
-  return url
+  try {
+    // https://aws.amazon.com/blogs/developer/generate-presigned-url-modular-aws-sdk-javascript/
+    const command = new GetObjectCommand(params)
+    const seconds = 3600
+    const url = await getSignedUrl(s3Client, command, { expiresIn: seconds })
+    console.log('Signed URL in S3.js:', url)
+    return url
+  } catch (error) {
+    console.error('Error generating signed URL:', error)
+    throw new Error('Could not generate signed URL:' + error)
+  }
 }
