@@ -8,6 +8,11 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true
   },
+  images: {
+    domains: [
+      'woodesy.s3.ap-south-1.amazonaws.com' // Add your S3 bucket domain here
+    ]
+  },
   env: {
     SQL_USERNAME: process.env.SQL_USERNAME,
     SQL_PASSWORD: process.env.SQL_PASSWORD,

@@ -40,7 +40,8 @@
     "react-hook-form": "^7.52.1",
     "react-perfect-scrollbar": "1.5.8",
     "react-use": "17.5.0",
-    "server-only": "0.0.1"
+    "server-only": "0.0.1",
+    "sharp": "^0.33.4"
   },
   "devDependencies": {
     "@iconify/json": "2.2.225",
