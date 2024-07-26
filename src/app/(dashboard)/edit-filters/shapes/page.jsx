@@ -36,6 +36,8 @@ import { Controller, useForm } from 'react-hook-form'
 
 // For Image Display
 import Image from 'next/image'
+import { Input } from '@mui/material'
+import { TextFields } from '@mui/icons-material'
 
 // Define column helper
 const columnHelper = createColumnHelper()
@@ -256,8 +258,45 @@ const ShapesPage = () => {
   )
 
   // Debounced Input for Search
-  const DebouncedInput = ({ value: initialValue, inputRef, onChange, debounce = 500, ...props }) => {
-    // ... (DebouncedInput logic - remains the same) ...
+  const DebouncedInput = ({ value: initialValue, onChange, debounce = 500, inputRef, ...props }) => {
+    const [value, setValue] = useState(initialValue)
+    const [shouldFocus, setShouldFocus] = useState(false)
+
+    useEffect(() => {
+      setValue(initialValue)
+    }, [initialValue])
+
+    useEffect(() => {
+      const timeout = setTimeout(() => {
+        onChange(value)
+        setShouldFocus(true)
+      }, debounce)
+
+      return () => clearTimeout(timeout)
+    }, [value, onChange, debounce])
+
+    useEffect(() => {
+      if (shouldFocus && inputRef.current) {
+        inputRef.current.focus()
+        setShouldFocus(false)
+      }
+    }, [shouldFocus, inputRef])
+
+    return (
+      <TextField
+        {...props}
+        value={value}
+        onChange={e => setValue(e.target.value)}
+        size='small'
+        inputRef={inputRef}
+        sx={{
+          '& .MuiInputBase-input::placeholder': {
+            color: 'gray'
+          },
+          borderColor: 'gray'
+        }}
+      />
+    )
   }
 
   // React Table Instance
