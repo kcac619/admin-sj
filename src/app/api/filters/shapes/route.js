@@ -118,11 +118,11 @@ export async function DELETE(request) {
   }
 }
 
-export const config = {
-  api: {
-    bodyParser: true
-  }
-}
+// export const config = {
+//   api: {
+//     bodyParser: true
+//   }
+// }
 
 export async function PUT(request) {
   try {
