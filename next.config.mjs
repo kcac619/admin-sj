@@ -18,10 +18,10 @@ const nextConfig = {
     SQL_PASSWORD: process.env.SQL_PASSWORD,
     SQL_HOST: process.env.SQL_HOST,
     SQL_DBNAME: process.env.SQL_DBNAME,
-    AWS_SECRET_ACCESS_KEY: process.env.AWS_SECRET_ACCESS_KEY,
-    AWS_ACCESS_KEY: process.env.AWS_ACCESS_KEY,
-    AWS_BUCKET_NAME: process.env.AWS_BUCKET_NAME,
-    AWS_BUCKET_REGION: process.env.AWS_BUCKET_REGION
+    MY_AWS_SECRET_ACCESS_KEY: process.env.MY_AWS_SECRET_ACCESS_KEY,
+    MY_AWS_ACCESS_KEY: process.env.MY_AWS_ACCESS_KEY,
+    MY_AWS_BUCKET_NAME: process.env.MY_AWS_BUCKET_NAME,
+    MY_AWS_BUCKET_REGION: process.env.MY_AWS_BUCKET_REGION
   },
   redirects: async () => {
     return [
