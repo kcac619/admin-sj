@@ -67,18 +67,69 @@ const VerticalMenu = ({ scrollMenu }) => {
         menuSectionStyles={menuSectionStyles(verticalNavOptions, theme)}
       >
         <MenuItem href='/home' icon={<i className='ri-home-smile-line' />}>
-          Home
+          <span style={{ fontFamily: 'Inter, Helvetica Neue, Arial, sans-serif' }}>Home </span>
         </MenuItem>
         <SubMenu
           // onClick={() => setOpenFilters(!openFilters)}
           // href='/edit-filters'
-          label='Edit Filters '
+          label={<span style={{ fontFamily: 'Inter, Helvetica Neue, Arial, sans-serif' }}>Master</span>}
           icon={<i className='ri-filter-2-line' />}
+          style={{ fontFamily: 'Inter, sans-serif' }}
         >
-          <MenuItem href='/edit-filters/shapes'>Edit Shapes</MenuItem>
+          <MenuItem href='/master/solitaire'>
+            <span style={{ fontFamily: 'Inter, Helvetica Neue, Arial, sans-serif' }}>
+              &nbsp;&nbsp;&nbsp;&nbsp;Solitaire
+            </span>
+          </MenuItem>
+          <MenuItem href='/master/shapes'>
+            <span style={{ fontFamily: 'Inter, Helvetica Neue, Arial, sans-serif' }}>
+              &nbsp;&nbsp;&nbsp;&nbsp;Shapes
+            </span>
+          </MenuItem>
+          <MenuItem href='/master/carat'>
+            <span style={{ fontFamily: 'Inter, Helvetica Neue, Arial, sans-serif' }}>
+              &nbsp;&nbsp;&nbsp;&nbsp;Carat
+            </span>
+          </MenuItem>
+          <MenuItem href='/master/color'>
+            <span style={{ fontFamily: 'Inter, Helvetica Neue, Arial, sans-serif' }}>
+              &nbsp;&nbsp;&nbsp;&nbsp;Color
+            </span>
+          </MenuItem>
+          <MenuItem href='/master/fluor'>
+            <span style={{ fontFamily: 'Inter, Helvetica Neue, Arial, sans-serif' }}>
+              &nbsp;&nbsp;&nbsp;&nbsp;Fluor
+            </span>
+          </MenuItem>
+          <MenuItem href='/master/purity'>
+            <span style={{ fontFamily: 'Inter, Helvetica Neue, Arial, sans-serif' }}>
+              &nbsp;&nbsp;&nbsp;&nbsp;Purity
+            </span>
+          </MenuItem>
+          <MenuItem href='/master/cut'>
+            <span style={{ fontFamily: 'Inter, Helvetica Neue, Arial, sans-serif' }}>&nbsp;&nbsp;&nbsp;&nbsp;Cut</span>
+          </MenuItem>
+          <MenuItem href='/master/lab'>
+            <span style={{ fontFamily: 'Inter, Helvetica Neue, Arial, sans-serif' }}>&nbsp;&nbsp;&nbsp;&nbsp;Lab</span>
+          </MenuItem>
+          <MenuItem href='/master/polish'>
+            <span style={{ fontFamily: 'Inter, Helvetica Neue, Arial, sans-serif' }}>
+              &nbsp;&nbsp;&nbsp;&nbsp;Polish
+            </span>
+          </MenuItem>
+          <MenuItem href='/master/symm'>
+            <span style={{ fontFamily: 'Inter, Helvetica Neue, Arial, sans-serif' }}>
+              &nbsp;&nbsp;&nbsp;&nbsp;Symm.
+            </span>
+          </MenuItem>
+          <MenuItem href='/master/location'>
+            <span style={{ fontFamily: 'Inter, Helvetica Neue, Arial, sans-serif' }}>
+              &nbsp;&nbsp;&nbsp;&nbsp;Location
+            </span>
+          </MenuItem>
         </SubMenu>
         <MenuItem href='/about' icon={<i className='ri-information-line' />}>
-          About
+          <span style={{ fontFamily: 'Inter, Helvetica Neue, Arial, sans-serif' }}>About </span>
         </MenuItem>
       </Menu>
       {/* <Menu

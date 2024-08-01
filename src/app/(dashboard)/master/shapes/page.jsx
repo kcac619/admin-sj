@@ -1,7 +1,7 @@
 'use client'
 import { useTheme } from '@mui/material/styles'
 import primaryColorConfig from '../../../../configs/primaryColorConfig'
-import { useEffect, useState, useMemo, useRef } from 'react'
+import React, { useEffect, useState, useMemo, useRef } from 'react'
 import axios from 'axios'
 
 // MUI Imports
@@ -24,11 +24,16 @@ import Divider from '@mui/material/Divider'
 import Drawer from '@mui/material/Drawer'
 import TextField from '@mui/material/TextField'
 import Stack from '@mui/material/Stack'
+import CircularProgress from '@mui/material/CircularProgress'
+import Snackbar from '@mui/material/Snackbar'
+import MuiAlert from '@mui/material/Alert'
+
 // React Table Imports
 import {
   useReactTable,
   getCoreRowModel,
   getPaginationRowModel,
+  getSortedRowModel,
   flexRender,
   createColumnHelper
 } from '@tanstack/react-table'
@@ -36,11 +41,16 @@ import { Controller, useForm } from 'react-hook-form'
 
 // For Image Display
 import Image from 'next/image'
-import { DialogContentText, Input } from '@mui/material'
+import { DialogContentText, FormControlLabel, Input, Switch } from '@mui/material'
 import { TextFields } from '@mui/icons-material'
 
 // Define column helper
 const columnHelper = createColumnHelper()
+
+// Alert Component
+const Alert = React.forwardRef(function Alert(props, ref) {
+  return <MuiAlert elevation={6} ref={ref} variant='filled' {...props} />
+})
 
 const ShapesPage = () => {
   const theme = useTheme()
@@ -61,6 +71,19 @@ const ShapesPage = () => {
 
   const [shapeToDelete, setShapeToDelete] = useState(null)
   const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false)
+
+  const [sorting, setSorting] = useState([['ShapeName', 'asc']])
+
+  // Loading States
+  const [isLoading, setIsLoading] = useState(true)
+  const [isAdding, setIsAdding] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+
+  // Toast State
+  const [toastOpen, setToastOpen] = useState(false)
+  const [toastSeverity, setToastSeverity] = useState('success') // 'success' | 'error'
+  const [toastMessage, setToastMessage] = useState('')
 
   // useForm for Add Shape
   const {
@@ -91,11 +114,13 @@ const ShapesPage = () => {
 
   // Handle Add Shape Form Submission
   const onAddSubmit = async data => {
+    setIsAdding(true)
     try {
       const formData = new FormData()
       formData.append('ShapeName', data.ShapeName)
 
       if (data.image && data.image[0]) {
+        console.log('Image Selected:', data.image[0])
         const file = data.image[0]
         if (!['image/jpeg', 'image/png', 'image/gif'].includes(file.type)) {
           alert('Only JPG, PNG, and GIF files are allowed.')
@@ -124,6 +149,9 @@ const ShapesPage = () => {
           handleClose()
           resetAddForm()
           fetchShapes()
+          setToastSeverity('success')
+          setToastMessage('Shape added successfully!')
+          setToastOpen(true)
         }
       } else {
         // Handle the case where no image is selected
@@ -132,11 +160,17 @@ const ShapesPage = () => {
     } catch (error) {
       console.error('Error creating shape:', error)
       setError(error.message)
+      setToastSeverity('error')
+      setToastMessage('Error creating shape. Please try again later.')
+      setToastOpen(true)
+    } finally {
+      setIsAdding(false)
     }
   }
 
   // Handle Edit Shape Form Submission
   const onEditSubmit = async data => {
+    setIsEditing(true)
     try {
       const formData = new FormData()
       formData.append('ShapeID', data.ShapeID)
@@ -171,6 +205,9 @@ const ShapesPage = () => {
           setEditModalOpen(false)
           resetEditForm()
           fetchShapes()
+          setToastSeverity('success')
+          setToastMessage('Shape updated successfully!')
+          setToastOpen(true)
         }
       } else {
         // Proceed with the request if there's no image
@@ -179,15 +216,50 @@ const ShapesPage = () => {
         setEditModalOpen(false)
         resetEditForm()
         fetchShapes()
+        setToastSeverity('success')
+        setToastMessage('Shape updated successfully!')
+        setToastOpen(true)
       }
     } catch (error) {
       console.error('Error updating shape:', error)
       setError(error.message)
+      setToastSeverity('error')
+      setToastMessage('Error updating shape. Please try again later.')
+      setToastOpen(true)
+    } finally {
+      setIsEditing(false)
+    }
+  }
+
+  // Handle IsActive Toggle
+  const handleIsActiveToggle = async (shapeId, newIsActive) => {
+    try {
+      // API Call to update IsActive
+      const response = await axios.put('/api/filters/shapes-active', {
+        shapeId,
+        isActive: newIsActive
+      })
+
+      if (response.status === 200) {
+        // Update the shapes data in the UI
+        setShapes(prevShapes =>
+          prevShapes.map(shape => (shape.ShapeID === shapeId ? { ...shape, IsActive: newIsActive } : shape))
+        )
+        setToastSeverity('success')
+        setToastMessage('Shape active status updated successfully!')
+        setToastOpen(true)
+      }
+    } catch (error) {
+      console.error('Error updating IsActive:', error)
+      setToastSeverity('error')
+      setToastMessage('Error updating shape active status. Please try again.')
+      setToastOpen(true)
     }
   }
 
   // Fetch Shapes Data
   const fetchShapes = async () => {
+    setIsLoading(true)
     try {
       const response = await axios.get('/api/filters/shapes', {
         headers: {
@@ -202,10 +274,18 @@ const ShapesPage = () => {
         setFilteredShapes(response.data.shapes)
       } else {
         setError('Shapes data not found')
+        setToastSeverity('error')
+        setToastMessage('Shapes data not found.')
+        setToastOpen(true)
       }
     } catch (error) {
       console.error('Error fetching shapes:', error)
       setError('Error fetching shapes')
+      setToastSeverity('error')
+      setToastMessage('Error fetching shapes. Please try again later.')
+      setToastOpen(true)
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -247,17 +327,25 @@ const ShapesPage = () => {
   }
 
   const handleConfirmDelete = async () => {
+    setIsDeleting(true)
     try {
       if (shapeToDelete) {
         const response = await axios.delete(`/api/filters/shapes?shapeId=${shapeToDelete}`)
         console.log(response.data.message)
         fetchShapes()
         setShapeToDelete(null)
+        setToastSeverity('success')
+        setToastMessage('Shape deleted successfully!')
+        setToastOpen(true)
       }
     } catch (error) {
       console.error('Error deleting shape:', error)
       setError(error.message)
+      setToastSeverity('error')
+      setToastMessage('Error deleting shape. Please try again later.')
+      setToastOpen(true)
     } finally {
+      setIsDeleting(false)
       setDeleteConfirmationOpen(false)
     }
   }
@@ -265,21 +353,31 @@ const ShapesPage = () => {
   // Define Table Columns
   const columns = useMemo(
     () => [
-      columnHelper.accessor('ShapeID', {
-        header: 'Shape ID',
-        cell: info => info.getValue()
+      columnHelper.display({
+        id: 'srNo',
+        header: 'Sr. No.',
+        cell: ({ row }) => row.index + 1 // Simple SR No.
       }),
       columnHelper.accessor('ShapeName', {
         header: 'Shape Name',
         cell: info => info.getValue()
       }),
-      columnHelper.accessor('ImageKey', {
-        // Changed ImageUrl to imageKey
-        header: 'Image Key',
-        cell: info => info.getValue()
+      columnHelper.accessor('IsActive', {
+        header: 'Is Active',
+        cell: ({ row }) => (
+          <FormControlLabel
+            control={
+              <Switch
+                checked={row.original.IsActive}
+                onChange={e => handleIsActiveToggle(row.original.ShapeID, e.target.checked)}
+              />
+            }
+            label='' // Remove the default label text
+          />
+        )
       }),
       columnHelper.display({
-        id: 'image', // New column for displaying the image
+        id: 'image',
         header: 'Image',
         cell: ({ row }) => (
           <div>
@@ -288,7 +386,7 @@ const ShapesPage = () => {
                 <Image
                   src={row.original.imageUrl}
                   alt={row.original.ShapeName}
-                  width={30} // Adjust width as needed
+                  width={30}
                   height={30}
                   className='block max-w-full h-auto'
                 />
@@ -303,18 +401,22 @@ const ShapesPage = () => {
         id: 'actions',
         header: 'Actions',
         cell: ({ row }) => (
-          <div className='flex space-x-2'>
+          <div className='flex space-x-2 justify-center'>
             <IconButton onClick={() => handleEdit(row.original)} color='primary'>
               <i className='ri-edit-box-line' />
             </IconButton>
-            <IconButton onClick={() => handleDelete(row.original.ShapeID)} color='secondary'>
-              <i className='ri-delete-bin-7-line' />
-            </IconButton>
+            {isDeleting && shapeToDelete === row.original.ShapeID ? (
+              <CircularProgress size={20} />
+            ) : (
+              <IconButton onClick={() => handleDelete(row.original.ShapeID)} color='error'>
+                <i className='ri-delete-bin-7-line' />
+              </IconButton>
+            )}
           </div>
         )
       })
     ],
-    []
+    [isDeleting, shapeToDelete] // Add isDeleting and shapeToDelete to dependencies
   )
 
   // Debounced Input for Search
@@ -360,20 +462,21 @@ const ShapesPage = () => {
   }
 
   // React Table Instance
-  // const visibleShapes = filteredShapes.filter(shape => !shape.IsDeleted) // Filter out deleted shapes
   const table = useReactTable({
     data: filteredShapes,
     columns,
     getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
+    onSortingChange: setSorting,
     state: {
       pagination: {
         pageIndex: page,
         pageSize: rowsPerPage
-      }
+      },
+      sorting
     }
   })
-
   // Close Drawer (Add Shape)
   const handleClose = () => {
     setAddShapeOpen(false)
@@ -383,8 +486,16 @@ const ShapesPage = () => {
     // Implement the export functionality here
   }
 
+  // Handle Toast Close
+  const handleToastClose = (event, reason) => {
+    if (reason === 'clickaway') {
+      return
+    }
+    setToastOpen(false)
+  }
+
   return (
-    <>
+    <div className='mt-0 pt-0'>
       {/* Delete Confirmation Dialog */}
       <Dialog open={deleteConfirmationOpen} onClose={() => setDeleteConfirmationOpen(false)}>
         <DialogTitle>Confirm Delete</DialogTitle>
@@ -395,9 +506,13 @@ const ShapesPage = () => {
           <Button onClick={() => setDeleteConfirmationOpen(false)} color='primary'>
             Cancel
           </Button>
-          <Button onClick={handleConfirmDelete} color='error'>
-            Yes, Delete
-          </Button>
+          {isDeleting ? (
+            <CircularProgress size={20} />
+          ) : (
+            <Button onClick={handleConfirmDelete} color='error'>
+              Yes, Delete
+            </Button>
+          )}
         </DialogActions>
       </Dialog>
       {/* Add Shape Drawer */}
@@ -445,42 +560,55 @@ const ShapesPage = () => {
               name='image'
               control={control}
               rules={{ required: false }}
-              render={({ field }) => {
-                console.log('Image Field Object', field)
-
-                return (
-                  <Stack direction='column' spacing={2} sx={{ mt: 2 }}>
-                    <Button variant='contained' component='label'>
-                      Upload New Image (Optional)
-                      <input
-                        type='file'
-                        hidden
-                        accept='.jpg,.jpeg,.png,.gif'
-                        {...field}
-                        onChange={e => {
-                          const file = e.target.files[0]
-                          if (file) {
-                            if (!['image/jpeg', 'image/png', 'image/gif'].includes(file.type)) {
-                              alert('Only JPG, PNG, and GIF files are allowed.')
-                              return
-                            }
-                            if (file.size > 1 * 1024 * 1024) {
-                              // 1MB
-                              alert('File size should not exceed 1MB.')
-                              return
-                            }
+              render={({ field }) => (
+                <Stack direction='column' spacing={2} sx={{ mt: 2 }}>
+                  <Button variant='contained' component='label'>
+                    Upload New Image (Optional)
+                    <input
+                      type='file'
+                      hidden
+                      accept='.jpg,.jpeg,.png,.gif'
+                      {...field}
+                      onChange={e => {
+                        const file = e.target.files[0]
+                        if (file) {
+                          if (!['image/jpeg', 'image/png', 'image/gif'].includes(file.type)) {
+                            alert('Only JPG, PNG, and GIF files are allowed.')
+                            return
                           }
-                          field.onChange(e.target.files)
-                        }}
-                        value={undefined}
+                          if (file.size > 1 * 1024 * 1024) {
+                            // 1MB
+                            alert('File size should not exceed 1MB.')
+                            return
+                          }
+                        }
+                        field.onChange(e.target.files)
+                      }}
+                      value={undefined}
+                    />
+                  </Button>
+                  {/* Image Preview Area */}
+                  <div className='mt-4 flex items-center justify-center'>
+                    {field.value && field.value[0] ? (
+                      <Image
+                        src={URL.createObjectURL(field.value[0])}
+                        alt='Selected Image'
+                        width={150}
+                        height={150}
+                        className='rounded-md shadow-md'
                       />
-                    </Button>
-                    {field.value && field.value[0] && (
-                      <Typography variant='body2'>Selected file: {field.value[0].name}</Typography>
+                    ) : (
+                      <Typography variant='body2' color='textSecondary'>
+                        No Image Selected
+                      </Typography>
                     )}
-                  </Stack>
-                )
-              }}
+                  </div>
+                  {field.value && field.value[0] && (
+                    <Typography variant='body2'>Selected file: {field.value[0].name}</Typography>
+                  )}
+                  {isAdding && <CircularProgress size={24} className='ms-3' />}
+                </Stack>
+              )}
             />
 
             <div className='flex items-end gap-4'>
@@ -583,9 +711,26 @@ const ShapesPage = () => {
                       value={undefined}
                     />
                   </Button>
+                  {/* Image Preview Area */}
+                  <div className='mt-4 flex items-center justify-center'>
+                    {shapeToEdit?.imageUrl || (field.value && field.value[0]) ? (
+                      <Image
+                        src={field.value && field.value[0] ? URL.createObjectURL(field.value[0]) : shapeToEdit.imageUrl}
+                        alt={shapeToEdit?.ShapeName}
+                        width={150}
+                        height={150}
+                        className='rounded-md shadow-md'
+                      />
+                    ) : (
+                      <Typography variant='body2' color='textSecondary'>
+                        No Image Selected
+                      </Typography>
+                    )}
+                  </div>
                   {field.value && field.value[0] && (
                     <Typography variant='body2'>Selected file: {field.value[0].name}</Typography>
                   )}
+                  {isEditing && <CircularProgress size={24} className='ms-3' />}
                 </Stack>
               )}
             />
@@ -640,53 +785,76 @@ const ShapesPage = () => {
         }}
       >
         {error && <Typography color='error'>{error}</Typography>}
-        <TableContainer>
-          <Table>
-            {/* Table Head */}
-            <TableHead>
-              {table.getHeaderGroups().map(headerGroup => (
-                <TableRow key={headerGroup.id}>
-                  {headerGroup.headers.map(header => (
-                    <TableCell
-                      key={header.id}
-                      style={{
-                        backgroundColor: theme.palette.mode === 'dark' ? '#3a3e5b' : primaryColor.light,
-                        color: theme.palette.mode === 'dark' ? '#eee9ef' : '#444'
-                      }}
-                    >
-                      {flexRender(header.column.columnDef.header, header.getContext())}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))}
-            </TableHead>
+        {isLoading && (
+          <div className='flex justify-center items-center h-full'>
+            <CircularProgress />
+          </div>
+        )}
+        {!isLoading && (
+          <TableContainer>
+            <Table>
+              <TableHead>
+                {table.getHeaderGroups().map(headerGroup => (
+                  <TableRow key={headerGroup.id}>
+                    {headerGroup.headers.map(header => (
+                      <TableCell
+                        key={header.id}
+                        style={{
+                          backgroundColor: theme.palette.mode === 'dark' ? '#3a3e5b' : primaryColor.light,
+                          color: theme.palette.mode === 'dark' ? '#eee9ef' : '#444',
+                          height: '50px',
+                          textAlign: 'center'
+                        }}
+                        onClick={header.column.getToggleSortingHandler()}
+                        className={header.column.getCanSort() ? 'cursor-pointer select-none' : ''}
+                      >
+                        {flexRender(header.column.columnDef.header, header.getContext())}
 
-            {/* Table Body */}
-            <TableBody>
-              {table.getRowModel().rows.map(row => (
-                <TableRow
-                  key={row.id}
-                  style={{ padding: 0, margin: 0 }}
-                  className={row.original.IsDeleted ? 'deleted-row' : ''}
-                >
-                  {row.getVisibleCells().map(cell => (
-                    <TableCell
-                      key={cell.id}
-                      style={{
-                        paddingTop: '1px',
-                        paddingBottom: '1px',
-                        backgroundColor: theme.palette.mode === 'dark' ? '#282a42' : '#fff',
-                        color: theme.palette.mode === 'dark' ? '#eee9ef' : '#555'
-                      }}
-                    >
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+                        {/* Render Remix Icons for Sorting ONLY for ShapeName column */}
+                        {header.id === 'ShapeName' && // Conditionally render icon
+                          (header.column.getIsSorted() === 'asc' ? (
+                            <i className='ri-arrow-up-s-line ml-2 pt-5'></i>
+                          ) : header.column.getIsSorted() === 'desc' ? (
+                            <i className='ri-arrow-down-s-line ml-2 pt-5'></i>
+                          ) : (
+                            <i className='ri-expand-up-down-line'></i>
+                          ))}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableHead>
+
+              {/* Table Body */}
+              <TableBody>
+                {table.getRowModel().rows.map(row => (
+                  <TableRow
+                    key={row.id}
+                    style={{ padding: 0, margin: 0 }}
+                    className={row.original.IsDeleted ? 'deleted-row' : ''}
+                  >
+                    {row.getVisibleCells().map(cell => (
+                      <TableCell
+                        key={cell.id}
+                        style={{
+                          paddingTop: '1px',
+                          paddingBottom: '1px',
+                          backgroundColor: theme.palette.mode === 'dark' ? '#282a42' : '#fff',
+                          color: theme.palette.mode === 'dark' ? '#eee9ef' : '#555',
+                          alignContent: 'center',
+                          textAlign: 'center',
+                          alignItems: 'center'
+                        }}
+                      >
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        )}
 
         {/* Table Pagination */}
         <TablePagination
@@ -706,7 +874,13 @@ const ShapesPage = () => {
           }}
         />
       </Card>
-    </>
+      {/* Toast */}
+      <Snackbar open={toastOpen} autoHideDuration={6000} onClose={handleToastClose}>
+        <Alert onClose={handleToastClose} severity={toastSeverity} sx={{ width: '100%' }}>
+          {toastMessage}
+        </Alert>
+      </Snackbar>
+    </div>
   )
 }
 

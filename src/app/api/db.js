@@ -63,7 +63,7 @@ async function callStoredProcedure(
 
     return returnObject
   } catch (error) {
-    console.error('Error occurred:', error)
+    console.error(`Error occurred calling sp - ${procedureName}`, error)
     throw error
   }
 }
