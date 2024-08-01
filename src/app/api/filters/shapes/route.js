@@ -31,15 +31,29 @@ export async function GET(request) {
       )
 
       return NextResponse.json({
+        statusid: result.statusid,
+        statusmessage: result.statusmessage,
         shapes: shapesWithUrls,
         totalCount: result.totalcount
       })
     } else {
-      throw new Error(result.message)
+      return NextResponse.json(
+        {
+          statusid: result.statusid, // Add statusid
+          statusmessage: result.statusmessage // Add statusmessage
+        },
+        { status: 400 }
+      )
     }
   } catch (error) {
     console.error(error)
-    return NextResponse.json({ error: 'Error fetching shapes' }, { status: 500 })
+    return NextResponse.json(
+      {
+        statusid: 0, // Default error statusid
+        statusmessage: 'Error fetching shapes' // Error message
+      },
+      { status: 500 }
+    )
   }
 }
 

@@ -9,8 +9,12 @@ const nextConfig = {
     ignoreDuringBuilds: true
   },
   images: {
-    domains: [
-      'woodesy.s3.ap-south-1.amazonaws.com' // Add your S3 bucket domain here
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'woodesy.s3.ap-south-1.amazonaws.com',
+        pathname: '/**'
+      }
     ]
   },
   env: {

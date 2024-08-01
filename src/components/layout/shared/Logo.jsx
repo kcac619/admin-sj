@@ -2,6 +2,7 @@
 
 // React Imports
 import { useEffect, useRef } from 'react'
+import { Inter } from 'next/font/google'
 
 // Third-party Imports
 import styled from '@emotion/styled'
@@ -18,6 +19,7 @@ import { useSettings } from '@core/hooks/useSettings'
 
 const LogoText = styled.span`
   font-size: 1.25rem;
+  font-family: 'Roboto', 'Helvetica Neue', 'Arial', sans-serif;
   line-height: 1.2;
   font-weight: 600;
   letter-spacing: 0.15px;
