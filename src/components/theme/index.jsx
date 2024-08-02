@@ -30,6 +30,8 @@ import { useSettings } from '@core/hooks/useSettings'
 // Core Theme Imports
 import defaultCoreTheme from '@core/theme'
 
+import mergedTheme from './mergedTheme'
+
 const ThemeProvider = props => {
   // Props
   const { children, direction, systemMode } = props

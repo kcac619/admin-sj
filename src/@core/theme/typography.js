@@ -2,6 +2,7 @@ const typography = fontFamily => ({
   fontFamily:
     typeof fontFamily === 'undefined' || fontFamily === ''
       ? [
+          'Arial',
           'Inter',
           'sans-serif',
           '-apple-system',

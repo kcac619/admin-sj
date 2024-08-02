@@ -10,11 +10,13 @@ import { deepmerge } from '@mui/utils'
 
 // Core Theme Imports
 import coreTheme from '@core/theme'
+import typography from '@/@core/theme/typography'
 
 const mergedTheme = (settings, mode, direction) => {
   // Vars
   const userTheme = {
     // Write your overrides here.
+    typography: typography(settings.fontFamily)
   }
 
   return deepmerge(coreTheme(settings, mode, direction), userTheme)
