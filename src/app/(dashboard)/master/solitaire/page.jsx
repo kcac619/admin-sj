@@ -2426,10 +2426,29 @@ const SolitaireFilterPage = () => {
                     </Button>
                     {/* Image Preview Area */}
                     <div className='mt-4 flex items-center justify-center'>
-                      {field.value && field.value[0] ? (
+                      {/* Check the type of field.value */}
+                      {field.value ? (
+                        field.value[0] instanceof File ? (
+                          <Image
+                            src={URL.createObjectURL(field.value[0])}
+                            alt='Selected Image'
+                            width={150}
+                            height={150}
+                            className='rounded-md shadow-md'
+                          />
+                        ) : (
+                          <Image
+                            src={solitaireToEdit.Image1}
+                            alt='Solitaire Image'
+                            width={150}
+                            height={150}
+                            className='rounded-md shadow-md'
+                          />
+                        )
+                      ) : solitaireToEdit?.Image1 ? (
                         <Image
-                          src={URL.createObjectURL(field.value[0])}
-                          alt='Selected Image'
+                          src={solitaireToEdit.Image1}
+                          alt='Solitaire Image'
                           width={150}
                           height={150}
                           className='rounded-md shadow-md'
@@ -2479,10 +2498,29 @@ const SolitaireFilterPage = () => {
                     </Button>
                     {/* Image Preview Area */}
                     <div className='mt-4 flex items-center justify-center'>
-                      {field.value && field.value[0] ? (
+                      {/* Check the type of field.value */}
+                      {field.value ? (
+                        field.value[0] instanceof File ? (
+                          <Image
+                            src={URL.createObjectURL(field.value[0])}
+                            alt='Selected Image'
+                            width={150}
+                            height={150}
+                            className='rounded-md shadow-md'
+                          />
+                        ) : (
+                          <Image
+                            src={solitaireToEdit.Image1}
+                            alt='Solitaire Image'
+                            width={150}
+                            height={150}
+                            className='rounded-md shadow-md'
+                          />
+                        )
+                      ) : solitaireToEdit?.Image1 ? (
                         <Image
-                          src={URL.createObjectURL(field.value[0])}
-                          alt='Selected Image'
+                          src={solitaireToEdit.Image1}
+                          alt='Solitaire Image'
                           width={150}
                           height={150}
                           className='rounded-md shadow-md'
@@ -2532,10 +2570,29 @@ const SolitaireFilterPage = () => {
                     </Button>
                     {/* Image Preview Area */}
                     <div className='mt-4 flex items-center justify-center'>
-                      {field.value && field.value[0] ? (
+                      {/* Check the type of field.value */}
+                      {field.value ? (
+                        field.value[0] instanceof File ? (
+                          <Image
+                            src={URL.createObjectURL(field.value[0])}
+                            alt='Selected Image'
+                            width={150}
+                            height={150}
+                            className='rounded-md shadow-md'
+                          />
+                        ) : (
+                          <Image
+                            src={solitaireToEdit.Image1}
+                            alt='Solitaire Image'
+                            width={150}
+                            height={150}
+                            className='rounded-md shadow-md'
+                          />
+                        )
+                      ) : solitaireToEdit?.Image1 ? (
                         <Image
-                          src={URL.createObjectURL(field.value[0])}
-                          alt='Selected Image'
+                          src={solitaireToEdit.Image1}
+                          alt='Solitaire Image'
                           width={150}
                           height={150}
                           className='rounded-md shadow-md'
@@ -2585,10 +2642,29 @@ const SolitaireFilterPage = () => {
                     </Button>
                     {/* Image Preview Area */}
                     <div className='mt-4 flex items-center justify-center'>
-                      {field.value && field.value[0] ? (
+                      {/* Check the type of field.value */}
+                      {field.value ? (
+                        field.value[0] instanceof File ? (
+                          <Image
+                            src={URL.createObjectURL(field.value[0])}
+                            alt='Selected Image'
+                            width={150}
+                            height={150}
+                            className='rounded-md shadow-md'
+                          />
+                        ) : (
+                          <Image
+                            src={solitaireToEdit.Image1}
+                            alt='Solitaire Image'
+                            width={150}
+                            height={150}
+                            className='rounded-md shadow-md'
+                          />
+                        )
+                      ) : solitaireToEdit?.Image1 ? (
                         <Image
-                          src={URL.createObjectURL(field.value[0])}
-                          alt='Selected Image'
+                          src={solitaireToEdit.Image1}
+                          alt='Solitaire Image'
                           width={150}
                           height={150}
                           className='rounded-md shadow-md'
