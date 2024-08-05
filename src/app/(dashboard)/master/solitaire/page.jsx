@@ -42,7 +42,7 @@ import {
   flexRender,
   createColumnHelper
 } from '@tanstack/react-table'
-import { Controller, useForm } from 'react-hook-form'
+import { Controller, set, useForm } from 'react-hook-form'
 import { DialogContentText, MenuItem } from '@mui/material'
 
 // Define column helper
@@ -77,6 +77,7 @@ const SolitaireFilterPage = () => {
   const [isAdding, setIsAdding] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isFilterDataLoading, setIsFilterDataLoading] = useState(true)
 
   // Toast State
   const [toastOpen, setToastOpen] = useState(false)
@@ -84,6 +85,7 @@ const SolitaireFilterPage = () => {
   const [toastMessage, setToastMessage] = useState('')
 
   // Filter Data (Initially Empty - will be fetched)
+
   const [shapes, setShapes] = useState([])
   const [carats, setCarats] = useState([])
   const [colors, setColors] = useState([])
@@ -94,6 +96,7 @@ const SolitaireFilterPage = () => {
   const [polishs, setPolishs] = useState([])
   const [symms, setSymms] = useState([])
   const [locations, setLocations] = useState([])
+  const [certificateNumbers, setCertificateNumbers] = useState([])
 
   // useForm for Add Solitaire
   const {
@@ -113,6 +116,7 @@ const SolitaireFilterPage = () => {
       PolishID: '',
       SymmetryID: '',
       LocationID: '',
+      CertificateNumber: '',
       Image1: null,
       Image2: null,
       Image3: null,
@@ -140,6 +144,7 @@ const SolitaireFilterPage = () => {
       PolishID: '',
       SymmetryID: '',
       LocationID: '',
+      CertificateNumber: '',
       Image1: null,
       Image2: null,
       Image3: null,
@@ -148,13 +153,27 @@ const SolitaireFilterPage = () => {
     }
   })
 
+  const isCertificateNumberUnique = certificateNumber => {
+    return !solitaires.some(s => s.CertificateNumber === certificateNumber)
+  }
+  const isCertificateNumberUniqueForEdit = (certificateNumber, solitaireId) => {
+    return !solitaires.some(s => s.SolitaireID !== solitaireId && s.CertificateNumber === certificateNumber) // Exclude current ID
+  }
   // Fetch Data for All Filters
   const fetchAllFilterData = async () => {
     try {
+      //   const solitaireResponse = await axios.get('/api/filters/solitaires')
+      //   console.log('solitaireResponse:', solitaireResponse)
+      //   if (solitaireResponse.data.statusid === 1) {
+      //     setSolitaires(solitaireResponse.data.solitaires)
+      //   } else {
+      //     console.error('Error fetching solitaires:', solitaireResponse.data.statusmessage)
+      //   }
+      setIsFilterDataLoading(true)
       const shapeResponse = await axios.get('/api/filters/shapes')
-      console.log('shapeResponse:', shapeResponse)
+      //   console.log('shapeResponse:', shapeResponse)
       if (shapeResponse.data.statusid === 1) {
-        console.log('Shapes:', shapeResponse.data.shapes)
+        // console.log('Shapes:', shapeResponse.data.shapes)
         setShapes(shapeResponse.data.shapes)
       } else {
         console.error('Error fetching shapes:', shapeResponse.data.statusmessage)
@@ -222,8 +241,17 @@ const SolitaireFilterPage = () => {
       } else {
         console.error('Error fetching locations:', locationResponse.data.statusmessage)
       }
+      setIsFilterDataLoading(false)
+      setToastSeverity('success')
+      setToastMessage('Filter data fetched successfully.')
+      setToastOpen(true)
     } catch (error) {
       console.error('Error fetching filter data:', error)
+      // Display error toast
+      setToastSeverity('error')
+      setToastMessage('Error fetching filter data. Please try again later.')
+      setToastOpen(true)
+      setIsFilterDataLoading(false)
     }
   }
 
@@ -233,6 +261,16 @@ const SolitaireFilterPage = () => {
 
   const onAddSubmit = async data => {
     setIsAdding(true)
+
+    // Check if the certificate number is unique
+    if (!isCertificateNumberUnique(data.CertificateNumber)) {
+      setError('Certificate number must be unique.')
+      setToastSeverity('error')
+      setToastMessage('Certificate number must be unique.')
+      setToastOpen(true)
+      setIsAdding(false)
+      return
+    }
 
     try {
       const formData = new FormData() // Create FormData object
@@ -246,6 +284,7 @@ const SolitaireFilterPage = () => {
       formData.append('PolishID', parseInt(data.PolishID))
       formData.append('SymmetryID', parseInt(data.SymmetryID))
       formData.append('LocationID', parseInt(data.LocationID))
+      formData.append('CertificateNumber', data.CertificateNumber)
 
       // Handle image uploads
       for (let i = 0; i < imageFields.length; i++) {
@@ -325,6 +364,16 @@ const SolitaireFilterPage = () => {
     try {
       const formData = new FormData()
 
+      // Check if the certificate number is unique
+      if (!isCertificateNumberUniqueForEdit(data.CertificateNumber, parseInt(data.SolitaireID))) {
+        setError('Certificate number must be unique.')
+        setToastSeverity('error')
+        setToastMessage('Certificate number must be unique.')
+        setToastOpen(true)
+        setIsEditing(false) // Reset the isEditing state
+        return // Stop further execution
+      }
+
       formData.append('SolitaireID', parseInt(data.SolitaireID))
       formData.append('ShapeID', parseInt(data.ShapeID))
       formData.append('Carat', parseFloat(data.Carat))
@@ -336,6 +385,7 @@ const SolitaireFilterPage = () => {
       formData.append('PolishID', parseInt(data.PolishID))
       formData.append('SymmetryID', parseInt(data.SymmetryID))
       formData.append('LocationID', parseInt(data.LocationID))
+      formData.append('CertificateNumber', data.CertificateNumber)
 
       // Handle image uploads (similar to onAddSubmit)
       const imageFields = ['Image1', 'Image2', 'Image3', 'Image4', 'Image5']
@@ -468,8 +518,12 @@ const SolitaireFilterPage = () => {
   useEffect(() => {
     fetchAllFilterData() // Fetch all filter data when the component mounts
     fetchSolitaires()
-    console.log('shapes state: ', shapes)
+    // console.log('shapes state: ', shapes)
   }, [])
+
+  useEffect(() => {
+    console.log('symmetry state: ', symms)
+  }, [symms])
 
   useEffect(() => {
     if (searchInputRef.current) {
@@ -480,18 +534,34 @@ const SolitaireFilterPage = () => {
   // Handle Edit Solitaire
   const handleEdit = solitaire => {
     setSolitaireToEdit(solitaire)
+    console.log('to edit the solitaire :', solitaire)
+    // console.log('solitaire.ShapeID:', solitaire.ShapeID)
+    const shapeId = shapes.find(shape => shape.ShapeName === solitaire.ShapeName)?.ShapeID || ''
+    const colorId = colors.find(color => color.ColorName === solitaire.ColorName)?.ColorID || ''
+    const fluorId = flours.find(fluor => fluor.FluorName === solitaire.FluorName)?.FluorID || ''
+    const purityId = purities.find(purity => purity.PurityName === solitaire.PurityName)?.PurityID || ''
+    const cutId = cuts.find(cut => cut.CutName === solitaire.CutName)?.CutID || ''
+    const labId = labs.find(lab => lab.LabName === solitaire.LabName)?.LabID || ''
+    const polishId = polishs.find(polish => polish.PolishName === solitaire.PolishName)?.PolishID || ''
+    const symmetryId = symms.find(symm => symm.SymmetryName === solitaire.SymmetryName)?.SymmetryID || 'emptystring'
+    console.log(symms[1].SymmetryName, 'name in symms')
+    console.log(solitaire.SymmName)
+    console.log('matched symmetryId in handletoEdit:', symmetryId)
+    const locationId = locations.find(location => location.LocationName === solitaire.LocationName)?.LocationID || '' // console.log('shapeIdmatch:', shapeId)
+    // const selectedShape = shapes.find(shape => shape.ShapeID === solitaire.ShapeID)
     resetEditForm({
       SolitaireID: solitaire.SolitaireID,
-      ShapeID: solitaire.ShapeID,
+      ShapeID: shapeId?.toString() || '',
       Carat: solitaire.Carat,
-      ColorID: solitaire.ColorID,
-      FluorID: solitaire.FluorID,
-      PurityID: solitaire.PurityID,
-      CutID: solitaire.CutID,
-      LabID: solitaire.LabID,
-      PolishID: solitaire.PolishID,
-      SymmetryID: solitaire.SymmetryID,
-      LocationID: solitaire.LocationID,
+      ColorID: colorId.toString() || '',
+      FluorID: fluorId.toString() || '',
+      PurityID: purityId.toString() || '',
+      CutID: cutId.toString() || '',
+      LabID: labId.toString() || '',
+      PolishID: polishId.toString() || '',
+      SymmetryID: symmetryId.toString() || '',
+      LocationID: locationId.toString() || '',
+      CertificateNumber: solitaire.CertificateNumber,
       Image1: null,
       Image2: null,
       Image3: null,
@@ -545,6 +615,19 @@ const SolitaireFilterPage = () => {
         id: 'srNo',
         header: 'Sr. No.',
         cell: ({ row }) => row.index + 1 // Simple SR No.
+      }),
+      // CertificateNumber column
+      columnHelper.accessor('CertificateNumber', {
+        header: 'Certificate Number',
+        cell: info => info.getValue(),
+        sortType: 'basic' // Enable sorting
+      }),
+
+      // UniqueCode column
+      columnHelper.accessor('UniqueCode', {
+        header: 'Unique Code',
+        cell: info => info.getValue(),
+        sortType: 'basic' // Enable sorting
       }),
       columnHelper.accessor('ShapeName', {
         // Using accessor for ShapeName
@@ -681,9 +764,14 @@ const SolitaireFilterPage = () => {
         header: 'Actions',
         cell: ({ row }) => (
           <div className='flex space-x-2 justify-center'>
-            <IconButton onClick={() => handleEdit(row.original)} color='primary'>
-              <i className='ri-edit-box-line' />
-            </IconButton>
+            {/* Edit Button with Conditional Spinner */}
+            {isFilterDataLoading ? (
+              <CircularProgress size={20} />
+            ) : (
+              <IconButton onClick={() => handleEdit(row.original)} color='primary'>
+                <i className='ri-edit-box-line' />
+              </IconButton>
+            )}
             {isDeleting && solitaireToDelete === row.original.SolitaireID ? (
               <CircularProgress size={20} />
             ) : (
@@ -695,7 +783,12 @@ const SolitaireFilterPage = () => {
         )
       })
     ],
-    [isDeleting, solitaireToDelete, shapes, carats, colors, flours, purities, cuts, labs, polishs, symms, locations]
+    [
+      isDeleting,
+      solitaireToDelete,
+      // shapes, carats, colors, flours, purities, cuts, labs, polishs, symms,
+      locations
+    ]
   )
 
   // Three dots button state
@@ -763,6 +856,7 @@ const SolitaireFilterPage = () => {
   // Close Drawer (Add Solitaire)
   const handleClose = () => {
     setAddSolitaireOpen(false)
+    resetAddForm()
   }
 
   const exportData = () => {
@@ -810,7 +904,7 @@ const SolitaireFilterPage = () => {
           sx: {
             width: {
               xs: '100%',
-              lg: '50%'
+              lg: '60%'
             }
           }
         }}
@@ -1345,7 +1439,27 @@ const SolitaireFilterPage = () => {
                   )
                 }}
               />
-
+              {/* CertificateNumber Controller */}
+              <Controller
+                name='CertificateNumber'
+                control={control}
+                rules={{ required: true }}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    fullWidth
+                    label='Certificate Number'
+                    placeholder='Enter Certificate Number'
+                    error={!!addErrors.CertificateNumber}
+                    InputProps={{
+                      inputProps: {
+                        style: { padding: '12px 15px' } // Reduced padding
+                      }
+                    }}
+                    helperText={addErrors.CertificateNumber ? 'This field is required' : ''}
+                  />
+                )}
+              />
               {/* Image Upload Fields */}
               <Controller
                 name='Image1'
@@ -1636,6 +1750,7 @@ const SolitaireFilterPage = () => {
       </Drawer>
 
       {/* Edit Solitaire Drawer */}
+
       <Drawer
         open={editModalOpen}
         anchor='right'
@@ -2186,6 +2301,24 @@ const SolitaireFilterPage = () => {
                   )
                 }}
               />
+              {/* CertificateNumber Controller */}
+              <Controller
+                name='CertificateNumber'
+                control={editControl}
+                rules={{ required: true }}
+                // defaultValue={solitaireToEdit?.CertificateNumber}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    fullWidth
+                    label='Certificate Number'
+                    placeholder='Enter Certificate Number'
+                    error={!!editErrors.CertificateNumber}
+                    helperText={editErrors.CertificateNumber ? 'This field is required' : ''}
+                    value={field.value} // Display existing Certificate Number
+                  />
+                )}
+              />
               {/* Image Upload Fields */}
               <Controller
                 name='Image1'
@@ -2484,19 +2617,20 @@ const SolitaireFilterPage = () => {
           Export
         </Button>
         <div className='flex items-center gap-x-4 max-sm:gap-y-4 is-full flex-col sm:is-auto sm:flex-row'>
-          <DebouncedInput
+          {/* <DebouncedInput
             value={globalFilter ?? ''}
             onChange={value => setGlobalFilter(String(value))}
             placeholder='Search Solitaire'
             inputRef={searchInputRef}
             className='is-full sm:is-auto'
-          />
+          /> */}
           <Button
             variant='contained'
             onClick={() => setAddSolitaireOpen(!addSolitaireOpen)}
             className='is-full sm:is-auto'
+            disabled={isFilterDataLoading} // Disable Add button while loading
           >
-            Add New Solitaire
+            {isFilterDataLoading ? 'Loading...' : 'Add New Solitaire'}
           </Button>
         </div>
       </div>
@@ -2607,7 +2741,7 @@ const SolitaireFilterPage = () => {
       </Card>
 
       {/* Toast */}
-      <Snackbar open={toastOpen} autoHideDuration={6000} onClose={handleToastClose}>
+      <Snackbar open={toastOpen} autoHideDuration={3000} onClose={handleToastClose}>
         <Alert onClose={handleToastClose} severity={toastSeverity} sx={{ width: '100%' }}>
           {toastMessage}
         </Alert>

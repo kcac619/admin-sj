@@ -120,7 +120,6 @@ const ShapesPage = () => {
       formData.append('ShapeName', data.ShapeName)
 
       if (data.image && data.image[0]) {
-        console.log('Image Selected:', data.image[0])
         const file = data.image[0]
         if (!['image/jpeg', 'image/png', 'image/gif'].includes(file.type)) {
           alert('Only JPG, PNG, and GIF files are allowed.')

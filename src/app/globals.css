@@ -23,7 +23,9 @@
   --mui-mainColorChannels-shadow: var(--mui-mainColorChannels-darkShadow);
 }
 
-
+body {
+  font-family: Inter, Arial, 'Arial Narrow Bold', sans-serif;
+}
 
 *,
 ::before,
