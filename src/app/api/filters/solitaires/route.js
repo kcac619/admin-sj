@@ -19,6 +19,8 @@ export async function GET(request) {
       'PolishName',
       'SymmName',
       'LocationName',
+      'CerificateNumber',
+      'UniqueCode',
       'Image1',
       'Image2',
       'Image3',
@@ -88,6 +90,7 @@ export async function POST(request) {
     const PolishID = parseInt(formData.get('PolishID'), 10)
     const SymmetryID = parseInt(formData.get('SymmetryID'), 10)
     const LocationID = parseInt(formData.get('LocationID'), 10)
+    const CertificateNumber = formData.get('CertificateNumber')
     const CreatedBy = 1 // Replace with actual user ID
     const CompanyID = 1 // Replace with actual company ID
 
@@ -126,6 +129,7 @@ export async function POST(request) {
         PolishID: PolishID,
         SymmetryID: SymmetryID,
         LocationID: LocationID,
+        CertificateNumber: CertificateNumber,
         Image1: uploadedImageKeys[0],
         Image2: uploadedImageKeys[1],
         Image3: uploadedImageKeys[2],
@@ -218,6 +222,7 @@ export async function PUT(request) {
     const PolishID = parseInt(formData.get('PolishID'), 10)
     const SymmetryID = parseInt(formData.get('SymmetryID'), 10)
     const LocationID = parseInt(formData.get('LocationID'), 10)
+    const CertificateNumber = formData.get('CertificateNumber')
     const ModifiedBy = 1
 
     const result = await callStoredProcedure(
@@ -234,6 +239,7 @@ export async function PUT(request) {
         PolishID,
         SymmetryID,
         LocationID,
+        CertificateNumber,
         Image1: uploadedImageKeys[0],
         Image2: uploadedImageKeys[1],
         Image3: uploadedImageKeys[2],
