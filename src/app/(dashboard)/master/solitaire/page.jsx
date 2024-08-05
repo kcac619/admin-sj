@@ -535,7 +535,7 @@ const SolitaireFilterPage = () => {
   const urlToFile = async (url, filename) => {
     // Removed mimeType parameter
     try {
-      const response = await fetch(url, { mode: 'no-cors' })
+      const response = await fetch(url)
       console.log('response:', response)
       const blob = await response.blob()
       const mimeType = response.headers.get('Content-Type') // Get MIME type from headers
