@@ -531,8 +531,23 @@ const SolitaireFilterPage = () => {
     }
   }, [globalFilter])
 
+  // Function to convert a URL to a File/Blob
+  const urlToFile = async (url, filename) => {
+    // Removed mimeType parameter
+    try {
+      const response = await fetch(url, { mode: 'no-cors' })
+      console.log('response:', response)
+      const blob = await response.blob()
+      const mimeType = response.headers.get('Content-Type') // Get MIME type from headers
+      return new File([blob], filename, { type: mimeType })
+    } catch (error) {
+      console.error(`Error converting URL to File:`, error)
+      return null
+    }
+  }
+
   // Handle Edit Solitaire
-  const handleEdit = solitaire => {
+  const handleEdit = async solitaire => {
     setSolitaireToEdit(solitaire)
     // console.log('to edit the solitaire :', solitaire)
     // console.log('solitaire.ShapeID:', solitaire.ShapeID)
@@ -549,25 +564,39 @@ const SolitaireFilterPage = () => {
     // console.log('matched symmetryId in handletoEdit:', symmetryId)
     const locationId = locations.find(location => location.LocationName === solitaire.LocationName)?.LocationID || '' // console.log('shapeIdmatch:', shapeId)
     // const selectedShape = shapes.find(shape => shape.ShapeID === solitaire.ShapeID)
-    resetEditForm({
-      SolitaireID: solitaire.SolitaireID,
-      ShapeID: shapeId?.toString() || '',
-      Carat: solitaire.Carat,
-      ColorID: colorId.toString() || '',
-      FluorID: fluorId.toString() || '',
-      PurityID: purityId.toString() || '',
-      CutID: cutId.toString() || '',
-      LabID: labId.toString() || '',
-      PolishID: polishId.toString() || '',
-      SymmetryID: symmetryId.toString() || '',
-      LocationID: locationId.toString() || '',
-      CertificateNumber: solitaire.CertificateNumber,
-      Image1: solitaire.Image1,
-      Image2: null,
-      Image3: null,
-      Image4: null,
-      Image5: null
-    })
+    try {
+      // Convert image URLs to File objects (async operations)
+      const image1File = solitaire.Image1 ? await urlToFile(solitaire.Image1, 'image1.jpg') : null
+      const image2File = solitaire.Image2 ? await urlToFile(solitaire.Image2, 'image2.jpg') : null
+      const image3File = solitaire.Image3 ? await urlToFile(solitaire.Image3, 'image3.jpg') : null
+      const image4File = solitaire.Image4 ? await urlToFile(solitaire.Image4, 'image4.jpg') : null
+      const image5File = solitaire.Image5 ? await urlToFile(solitaire.Image5, 'image5.jpg') : null
+
+      resetEditForm({
+        SolitaireID: solitaire.SolitaireID,
+        ShapeID: shapeId.toString(),
+        Carat: solitaire.Carat.toFixed(2),
+        ColorID: colorId.toString(),
+        FluorID: fluorId.toString(),
+        PurityID: purityId.toString(),
+        CutID: cutId.toString(),
+        LabID: labId.toString(),
+        PolishID: polishId.toString(),
+        SymmetryID: symmetryId.toString(),
+        LocationID: locationId.toString(),
+        Image1: image1File ? [image1File] : null, // Set as an array if file exists
+        Image2: image2File ? [image2File] : null,
+        Image3: image3File ? [image3File] : null,
+        Image4: image4File ? [image4File] : null,
+        Image5: image5File ? [image5File] : null
+      })
+    } catch (error) {
+      console.error('Error in handleEdit:', error)
+      // Handle the error appropriately (e.g., display an error toast)
+      setToastSeverity('error')
+      setToastMessage('Error fetching image data. Please try again later.')
+      setToastOpen(true)
+    }
     setEditModalOpen(true)
   }
 
@@ -2353,29 +2382,10 @@ const SolitaireFilterPage = () => {
                     </Button>
                     {/* Image Preview Area */}
                     <div className='mt-4 flex items-center justify-center'>
-                      {/* Check the type of field.value */}
-                      {field.value ? (
-                        field.value[0] instanceof File ? (
-                          <Image
-                            src={URL.createObjectURL(field.value[0])}
-                            alt='Selected Image'
-                            width={150}
-                            height={150}
-                            className='rounded-md shadow-md'
-                          />
-                        ) : (
-                          <Image
-                            src={solitaireToEdit.Image1}
-                            alt='Solitaire Image'
-                            width={150}
-                            height={150}
-                            className='rounded-md shadow-md'
-                          />
-                        )
-                      ) : solitaireToEdit?.Image1 ? (
+                      {field.value && field.value[0] ? (
                         <Image
-                          src={solitaireToEdit.Image1}
-                          alt='Solitaire Image'
+                          src={URL.createObjectURL(field.value[0])}
+                          alt='Selected Image'
                           width={150}
                           height={150}
                           className='rounded-md shadow-md'
@@ -2426,29 +2436,10 @@ const SolitaireFilterPage = () => {
                     </Button>
                     {/* Image Preview Area */}
                     <div className='mt-4 flex items-center justify-center'>
-                      {/* Check the type of field.value */}
-                      {field.value ? (
-                        field.value[0] instanceof File ? (
-                          <Image
-                            src={URL.createObjectURL(field.value[0])}
-                            alt='Selected Image'
-                            width={150}
-                            height={150}
-                            className='rounded-md shadow-md'
-                          />
-                        ) : (
-                          <Image
-                            src={solitaireToEdit.Image1}
-                            alt='Solitaire Image'
-                            width={150}
-                            height={150}
-                            className='rounded-md shadow-md'
-                          />
-                        )
-                      ) : solitaireToEdit?.Image1 ? (
+                      {field.value && field.value[0] ? (
                         <Image
-                          src={solitaireToEdit.Image1}
-                          alt='Solitaire Image'
+                          src={URL.createObjectURL(field.value[0])}
+                          alt='Selected Image'
                           width={150}
                           height={150}
                           className='rounded-md shadow-md'
@@ -2498,29 +2489,10 @@ const SolitaireFilterPage = () => {
                     </Button>
                     {/* Image Preview Area */}
                     <div className='mt-4 flex items-center justify-center'>
-                      {/* Check the type of field.value */}
-                      {field.value ? (
-                        field.value[0] instanceof File ? (
-                          <Image
-                            src={URL.createObjectURL(field.value[0])}
-                            alt='Selected Image'
-                            width={150}
-                            height={150}
-                            className='rounded-md shadow-md'
-                          />
-                        ) : (
-                          <Image
-                            src={solitaireToEdit.Image1}
-                            alt='Solitaire Image'
-                            width={150}
-                            height={150}
-                            className='rounded-md shadow-md'
-                          />
-                        )
-                      ) : solitaireToEdit?.Image1 ? (
+                      {field.value && field.value[0] ? (
                         <Image
-                          src={solitaireToEdit.Image1}
-                          alt='Solitaire Image'
+                          src={URL.createObjectURL(field.value[0])}
+                          alt='Selected Image'
                           width={150}
                           height={150}
                           className='rounded-md shadow-md'
@@ -2570,29 +2542,10 @@ const SolitaireFilterPage = () => {
                     </Button>
                     {/* Image Preview Area */}
                     <div className='mt-4 flex items-center justify-center'>
-                      {/* Check the type of field.value */}
-                      {field.value ? (
-                        field.value[0] instanceof File ? (
-                          <Image
-                            src={URL.createObjectURL(field.value[0])}
-                            alt='Selected Image'
-                            width={150}
-                            height={150}
-                            className='rounded-md shadow-md'
-                          />
-                        ) : (
-                          <Image
-                            src={solitaireToEdit.Image1}
-                            alt='Solitaire Image'
-                            width={150}
-                            height={150}
-                            className='rounded-md shadow-md'
-                          />
-                        )
-                      ) : solitaireToEdit?.Image1 ? (
+                      {field.value && field.value[0] ? (
                         <Image
-                          src={solitaireToEdit.Image1}
-                          alt='Solitaire Image'
+                          src={URL.createObjectURL(field.value[0])}
+                          alt='Selected Image'
                           width={150}
                           height={150}
                           className='rounded-md shadow-md'
@@ -2642,29 +2595,10 @@ const SolitaireFilterPage = () => {
                     </Button>
                     {/* Image Preview Area */}
                     <div className='mt-4 flex items-center justify-center'>
-                      {/* Check the type of field.value */}
-                      {field.value ? (
-                        field.value[0] instanceof File ? (
-                          <Image
-                            src={URL.createObjectURL(field.value[0])}
-                            alt='Selected Image'
-                            width={150}
-                            height={150}
-                            className='rounded-md shadow-md'
-                          />
-                        ) : (
-                          <Image
-                            src={solitaireToEdit.Image1}
-                            alt='Solitaire Image'
-                            width={150}
-                            height={150}
-                            className='rounded-md shadow-md'
-                          />
-                        )
-                      ) : solitaireToEdit?.Image1 ? (
+                      {field.value && field.value[0] ? (
                         <Image
-                          src={solitaireToEdit.Image1}
-                          alt='Solitaire Image'
+                          src={URL.createObjectURL(field.value[0])}
+                          alt='Selected Image'
                           width={150}
                           height={150}
                           className='rounded-md shadow-md'
