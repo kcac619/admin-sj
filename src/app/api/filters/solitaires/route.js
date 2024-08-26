@@ -2,13 +2,13 @@ import { NextResponse } from 'next/server'
 import { callStoredProcedure } from '../../db'
 import { uploadFile, deleteFile, getObjectSignedUrl } from '../../lib/s3'
 
-export const config = {
-  api: {
-    bodyParser: {
-      sizeLimit: '200mb' // Set body size limit to 200MB
-    }
-  }
-}
+// export const config = {
+//   api: {
+//     bodyParser: {
+//       sizeLimit: '200mb' // Set body size limit to 200MB
+//     }
+//   }
+// } NOT WORKING
 
 export async function GET(request) {
   try {
