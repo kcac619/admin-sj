@@ -2,6 +2,14 @@ import { NextResponse } from 'next/server'
 import { callStoredProcedure } from '../../db'
 import { uploadFile, deleteFile, getObjectSignedUrl } from '../../lib/s3'
 
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '200mb' // Set body size limit to 200MB
+    }
+  }
+}
+
 export async function GET(request) {
   try {
     const result = await callStoredProcedure('sp_AdminGetSolitaires', {}, [
@@ -26,6 +34,8 @@ export async function GET(request) {
       'Image3',
       'Image4',
       'Image5',
+      'PDFKey',
+      'VideoKey',
       'IsActive'
     ])
 
@@ -50,13 +60,42 @@ export async function GET(request) {
               return imageUrl
             })
           )
+
+          // Generate signed URL for PDF
+          let pdfUrl = null
+          if (solitaire.PDFKey) {
+            try {
+              pdfUrl = await getObjectSignedUrl(solitaire.PDFKey)
+              console.log(`Signed PDF URL for solitaire ${solitaire.SolitaireID}:`, pdfUrl)
+            } catch (error) {
+              console.error(`Error generating signed PDF URL for solitaire ${solitaire.SolitaireID}:`, error)
+            }
+          } else {
+            console.log(`No PDF found for solitaire ${solitaire.SolitaireID}`)
+          }
+
+          // Generate signed URL for Video
+          let videoUrl = null
+          if (solitaire.VideoKey) {
+            try {
+              videoUrl = await getObjectSignedUrl(solitaire.VideoKey)
+              console.log(`Signed Video URL for solitaire ${solitaire.SolitaireID}:`, videoUrl)
+            } catch (error) {
+              console.error(`Error generating signed Video URL for solitaire ${solitaire.SolitaireID}:`, error)
+            }
+          } else {
+            console.log(`No Video found for solitaire ${solitaire.SolitaireID}`)
+          }
+
           return {
             ...solitaire,
             Image1: imageUrls[0],
             Image2: imageUrls[1],
             Image3: imageUrls[2],
             Image4: imageUrls[3],
-            Image5: imageUrls[4]
+            Image5: imageUrls[4],
+            pdfUrl: pdfUrl, // Add pdfUrl to the solitaire object
+            videoUrl: videoUrl // Add videoUrl to the solitaire object
           }
         })
       )
@@ -91,8 +130,6 @@ export async function POST(request) {
     const SymmetryID = parseInt(formData.get('SymmetryID'), 10)
     const LocationID = parseInt(formData.get('LocationID'), 10)
     const CertificateNumber = formData.get('CertificateNumber')
-    const CreatedBy = 1 // Replace with actual user ID
-    const CompanyID = 1 // Replace with actual company ID
 
     const imageFields = ['Image1', 'Image2', 'Image3', 'Image4', 'Image5']
     const uploadedImageKeys = await Promise.all(
@@ -116,6 +153,77 @@ export async function POST(request) {
       })
     )
 
+    // PDF Upload
+    const pdfDataString = formData.get('PDF')
+    let uploadedPDFKey = null
+
+    if (pdfDataString) {
+      try {
+        const pdfData = JSON.parse(pdfDataString)
+        const { fileName, base64, mimeType } = pdfData
+
+        if (mimeType !== 'application/pdf') {
+          return NextResponse.json({ error: 'Invalid PDF file type' }, { status: 400 })
+        }
+
+        const buffer = Buffer.from(base64.split(',')[1], 'base64')
+
+        // Check file size
+        const maxSizeInBytes = 100 * 1024 * 1024 // 100MB
+        if (buffer.length > maxSizeInBytes) {
+          return NextResponse.json({ error: 'PDF file size exceeds 100MB limit' }, { status: 400 })
+        }
+
+        await uploadFile(buffer, fileName, mimeType)
+        uploadedPDFKey = fileName
+      } catch (error) {
+        console.error('Error uploading PDF:', error)
+        return NextResponse.json({ error: 'Error uploading PDF' }, { status: 500 })
+      }
+    }
+
+    // Video Upload
+    const videoDataString = formData.get('Video')
+    let uploadedVideoKey = null
+
+    if (videoDataString) {
+      try {
+        const videoData = JSON.parse(videoDataString)
+        const { fileName, base64, mimeType } = videoData
+
+        // Check video file type
+        const allowedVideoTypes = [
+          'video/mp4',
+          'video/webm',
+          'video/ogg',
+          'video/quicktime',
+          'video/x-msvideo',
+          'video/x-flv',
+          'video/x-matroska'
+        ]
+        if (!allowedVideoTypes.includes(mimeType)) {
+          return NextResponse.json({ error: 'Invalid video file type' }, { status: 400 })
+        }
+
+        const buffer = Buffer.from(base64.split(',')[1], 'base64')
+
+        // Check file size
+        const maxSizeInBytes = 100 * 1024 * 1024 // 100MB
+        if (buffer.length > maxSizeInBytes) {
+          return NextResponse.json({ error: 'Video file size exceeds 100MB limit' }, { status: 400 })
+        }
+
+        await uploadFile(buffer, fileName, mimeType)
+        uploadedVideoKey = fileName
+      } catch (error) {
+        console.error('Error uploading Video:', error)
+        return NextResponse.json({ error: 'Error uploading Video' }, { status: 500 })
+      }
+    }
+
+    const CreatedBy = 1 // Replace with actual user ID
+    const CompanyID = 1 // Replace with actual company ID
+
     const result = await callStoredProcedure(
       'sp_AdminCreateSolitaire',
       {
@@ -135,6 +243,8 @@ export async function POST(request) {
         Image3: uploadedImageKeys[2],
         Image4: uploadedImageKeys[3],
         Image5: uploadedImageKeys[4],
+        PDFKey: uploadedPDFKey,
+        VideoKey: uploadedVideoKey,
         CreatedBy: CreatedBy,
         CompanyID: CompanyID
       },
@@ -158,31 +268,6 @@ export async function POST(request) {
   } catch (error) {
     console.error('Error creating solitaire:', error)
     return NextResponse.json({ statusid: 0, statusmessage: 'Error creating solitaire' }, { status: 500 })
-  }
-}
-
-export async function DELETE(request) {
-  try {
-    const { searchParams } = new URL(request.url)
-    const solitaireId = searchParams.get('solitaireId')
-
-    if (solitaireId) {
-      const result = await callStoredProcedure('sp_AdminDeleteSolitaire', { SolitaireID: solitaireId }, [
-        'StatusID',
-        'StatusMessage'
-      ])
-
-      if (result.statusid === 1) {
-        return NextResponse.json({ statusid: result.statusid, statusmessage: result.statusmessage }, { status: 200 })
-      } else {
-        return NextResponse.json({ statusid: result.statusid, statusmessage: result.statusmessage }, { status: 400 })
-      }
-    } else {
-      return NextResponse.json({ statusid: 0, statusmessage: 'Missing solitaireId parameter' }, { status: 400 })
-    }
-  } catch (error) {
-    console.error('Error deleting solitaire:', error)
-    return NextResponse.json({ statusid: 0, statusmessage: 'Error deleting solitaire' }, { status: 500 })
   }
 }
 
@@ -225,6 +310,83 @@ export async function PUT(request) {
     const CertificateNumber = formData.get('CertificateNumber')
     const ModifiedBy = 1
 
+    // PDF Handling
+    let uploadedPDFKey = formData.get('PDF')
+
+    if (typeof uploadedPDFKey !== 'string' || !uploadedPDFKey.startsWith('https://')) {
+      const pdfDataString = uploadedPDFKey
+      uploadedPDFKey = null
+
+      if (pdfDataString) {
+        try {
+          const pdfData = JSON.parse(pdfDataString)
+          const { fileName, base64, mimeType } = pdfData
+
+          // Validate PDF MIME type
+          if (mimeType !== 'application/pdf') {
+            return NextResponse.json({ error: 'Invalid PDF file type' }, { status: 400 })
+          }
+
+          const buffer = Buffer.from(base64.split(',')[1], 'base64')
+
+          // Validate PDF file size
+          const maxSizeInBytes = 100 * 1024 * 1024 // 100MB
+          if (buffer.length > maxSizeInBytes) {
+            return NextResponse.json({ error: 'PDF file size exceeds 100MB limit' }, { status: 400 })
+          }
+
+          await uploadFile(buffer, fileName, mimeType)
+          uploadedPDFKey = fileName
+        } catch (error) {
+          console.error(`Error processing PDF:`, error)
+          // Handle the error appropriately, possibly returning an error response
+        }
+      }
+    }
+
+    // Video Handling
+    let uploadedVideoKey = formData.get('Video')
+
+    if (typeof uploadedVideoKey !== 'string' || !uploadedVideoKey.startsWith('https://')) {
+      const videoDataString = uploadedVideoKey
+      uploadedVideoKey = null
+
+      if (videoDataString) {
+        try {
+          const videoData = JSON.parse(videoDataString)
+          const { fileName, base64, mimeType } = videoData
+
+          // Validate video file type
+          const allowedVideoTypes = [
+            'video/mp4',
+            'video/webm',
+            'video/ogg',
+            'video/quicktime',
+            'video/x-msvideo',
+            'video/x-flv',
+            'video/x-matroska'
+          ]
+          if (!allowedVideoTypes.includes(mimeType)) {
+            return NextResponse.json({ error: 'Invalid video file type' }, { status: 400 })
+          }
+
+          const buffer = Buffer.from(base64.split(',')[1], 'base64')
+
+          // Validate video file size
+          const maxSizeInBytes = 100 * 1024 * 1024 // 100MB
+          if (buffer.length > maxSizeInBytes) {
+            return NextResponse.json({ error: 'Video file size exceeds 100MB limit' }, { status: 400 })
+          }
+
+          await uploadFile(buffer, fileName, mimeType)
+          uploadedVideoKey = fileName
+        } catch (error) {
+          console.error(`Error processing Video:`, error)
+          // Handle the error appropriately, possibly returning an error response
+        }
+      }
+    }
+
     const result = await callStoredProcedure(
       'sp_AdminUpdateSolitaire',
       {
@@ -245,6 +407,8 @@ export async function PUT(request) {
         Image3: uploadedImageKeys[2],
         Image4: uploadedImageKeys[3],
         Image5: uploadedImageKeys[4],
+        PDFKey: uploadedPDFKey,
+        VideoKey: uploadedVideoKey,
         ModifiedBy
       },
       ['StatusID', 'StatusMessage']
@@ -258,5 +422,29 @@ export async function PUT(request) {
   } catch (error) {
     console.error('Error in PUT handler route.js:', error)
     return NextResponse.json({ statusid: 0, statusmessage: 'Error updating solitaire' }, { status: 500 })
+  }
+}
+export async function DELETE(request) {
+  try {
+    const { searchParams } = new URL(request.url)
+    const solitaireId = searchParams.get('solitaireId')
+
+    if (solitaireId) {
+      const result = await callStoredProcedure('sp_AdminDeleteSolitaire', { SolitaireID: solitaireId }, [
+        'StatusID',
+        'StatusMessage'
+      ])
+
+      if (result.statusid === 1) {
+        return NextResponse.json({ statusid: result.statusid, statusmessage: result.statusmessage }, { status: 200 })
+      } else {
+        return NextResponse.json({ statusid: result.statusid, statusmessage: result.statusmessage }, { status: 400 })
+      }
+    } else {
+      return NextResponse.json({ statusid: 0, statusmessage: 'Missing solitaireId parameter' }, { status: 400 })
+    }
+  } catch (error) {
+    console.error('Error deleting solitaire:', error)
+    return NextResponse.json({ statusid: 0, statusmessage: 'Error deleting solitaire' }, { status: 500 })
   }
 }

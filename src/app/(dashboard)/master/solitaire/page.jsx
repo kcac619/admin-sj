@@ -72,6 +72,9 @@ const SolitaireFilterPage = () => {
 
   const [sorting, setSorting] = useState([['SolitaireID', 'asc']]) // Default sorting
 
+  const [videoModalOpen, setVideoModalOpen] = useState(false)
+  const [selectedVideoUrl, setSelectedVideoUrl] = useState(null)
+
   // Loading States
   const [isLoading, setIsLoading] = useState(true)
   const [isAdding, setIsAdding] = useState(false)
@@ -258,6 +261,8 @@ const SolitaireFilterPage = () => {
   // Handle Add Solitaire Form Submission
   const imageFields = ['Image1', 'Image2', 'Image3', 'Image4', 'Image5']
   const fileReaderRefs = imageFields.map(() => useRef(null))
+  const pdfFileReaderRef = useRef(null)
+  const videoFileReaderRef = useRef(null)
 
   const onAddSubmit = async data => {
     setIsAdding(true)
@@ -326,6 +331,80 @@ const SolitaireFilterPage = () => {
           })
         }
       }
+
+      // Handle PDF upload
+      if (data.PDF && data.PDF[0]) {
+        console.log('data.PDF:', data.PDF)
+        console.log('data.PDF[0]: ', data.PDF[0])
+        const pdfFile = data.PDF[0]
+        console.log(pdfFile)
+
+        pdfFileReaderRef.current = new FileReader()
+        pdfFileReaderRef.current.readAsDataURL(pdfFile)
+
+        if (pdfFile.size > 100 * 1024 * 1024) {
+          alert('PDF file size should not exceed 100MB.')
+          return
+        }
+
+        await new Promise(resolve => {
+          pdfFileReaderRef.current.onloadend = () => {
+            if (pdfFile.type !== 'application/pdf') {
+              alert('Only PDF files are allowed.')
+              return
+            }
+            const base64pdfData = pdfFileReaderRef.current.result
+            const pdfData = {
+              fileName: `${Date.now()}-${pdfFile.name}`,
+              mimeType: pdfFile.type,
+              base64: base64pdfData
+            }
+            formData.append('PDF', JSON.stringify(pdfData))
+            resolve()
+          }
+        })
+      }
+
+      // Handle Video upload
+      if (data.Video && data.Video[0]) {
+        const videoFile = data.Video[0]
+
+        // Validation for video file type and size
+        const allowedVideoTypes = [
+          'video/mp4',
+          'video/webm',
+          'video/ogg',
+          'video/quicktime',
+          'video/x-msvideo',
+          'video/x-flv',
+          'video/x-matroska'
+        ]
+        if (!allowedVideoTypes.includes(videoFile.type)) {
+          alert('Invalid video file type.')
+          return
+        }
+        if (videoFile.size > 100 * 1024 * 1024) {
+          alert('Video file size should not exceed 100MB.')
+          return
+        }
+
+        videoFileReaderRef.current = new FileReader()
+        videoFileReaderRef.current.readAsDataURL(videoFile)
+
+        await new Promise(resolve => {
+          videoFileReaderRef.current.onloadend = () => {
+            const base64videoData = videoFileReaderRef.current.result
+            const videoData = {
+              fileName: `${Date.now()}-${videoFile.name}`,
+              mimeType: videoFile.type,
+              base64: base64videoData
+            }
+            formData.append('Video', JSON.stringify(videoData))
+            resolve()
+          }
+        })
+      }
+
       formData.append('CreatedBy', 1) // Replace with the actual user ID
       formData.append('CompanyID', 1) // Replace with the actual company ID
 
@@ -417,6 +496,60 @@ const SolitaireFilterPage = () => {
                 base64: base64data
               }
               formData.append(imageField, JSON.stringify(imageData))
+              resolve()
+            }
+          })
+        }
+      }
+
+      // Handle PDF upload
+      if (data.PDF) {
+        if (typeof data.PDF === 'string' && data.PDF.startsWith('https://')) {
+          formData.append('PDF', data.PDF) // Pass existing PDF URL directly
+        } else if (data.PDF[0]) {
+          const pdfFile = data.PDF[0]
+
+          // You might want to add validation for PDF file type and size here
+
+          pdfFileReaderRef.current = new FileReader()
+          pdfFileReaderRef.current.readAsDataURL(pdfFile)
+
+          await new Promise(resolve => {
+            pdfFileReaderRef.current.onloadend = () => {
+              const base64pdfData = pdfFileReaderRef.current.result
+              const pdfData = {
+                fileName: `${Date.now()}-${pdfFile.name}`,
+                mimeType: pdfFile.type,
+                base64: base64pdfData
+              }
+              formData.append('PDF', JSON.stringify(pdfData)) // Append PDF data to FormData
+              resolve()
+            }
+          })
+        }
+      }
+
+      // Handle Video upload (similar to PDF upload)
+      if (data.Video) {
+        if (typeof data.Video === 'string' && data.Video.startsWith('https://')) {
+          formData.append('Video', data.Video) // Pass existing video URL directly
+        } else if (data.Video[0]) {
+          const videoFile = data.Video[0]
+
+          // You might want to add validation for video file type and size here
+
+          videoFileReaderRef.current = new FileReader()
+          videoFileReaderRef.current.readAsDataURL(videoFile)
+
+          await new Promise(resolve => {
+            videoFileReaderRef.current.onloadend = () => {
+              const base64videoData = videoFileReaderRef.current.result
+              const videoData = {
+                fileName: `${Date.now()}-${videoFile.name}`,
+                mimeType: videoFile.type,
+                base64: base64videoData
+              }
+              formData.append('Video', JSON.stringify(videoData))
               resolve()
             }
           })
@@ -533,9 +666,11 @@ const SolitaireFilterPage = () => {
 
   // Function to convert a URL to a File/Blob
   const urlToFile = async (url, filename) => {
-    // Removed mimeType parameter
+    // Base64 encode the URL
+    const encodedUrl = btoa(url)
+
     try {
-      const response = await fetch(url)
+      const response = await fetch(`/api/filters/fetch-image?url=${encodedUrl}`)
       console.log('response:', response)
       const blob = await response.blob()
       const mimeType = response.headers.get('Content-Type') // Get MIME type from headers
@@ -566,6 +701,7 @@ const SolitaireFilterPage = () => {
     // const selectedShape = shapes.find(shape => shape.ShapeID === solitaire.ShapeID)
     try {
       // Convert image URLs to File objects (async operations)
+      console.log('solitaire.Image1:', solitaire.Image1)
       const image1File = solitaire.Image1 ? await urlToFile(solitaire.Image1, 'image1.jpg') : null
       const image2File = solitaire.Image2 ? await urlToFile(solitaire.Image2, 'image2.jpg') : null
       const image3File = solitaire.Image3 ? await urlToFile(solitaire.Image3, 'image3.jpg') : null
@@ -584,11 +720,14 @@ const SolitaireFilterPage = () => {
         PolishID: polishId.toString(),
         SymmetryID: symmetryId.toString(),
         LocationID: locationId.toString(),
+        CertificateNumber: solitaire.CertificateNumber,
         Image1: image1File ? [image1File] : null, // Set as an array if file exists
         Image2: image2File ? [image2File] : null,
         Image3: image3File ? [image3File] : null,
         Image4: image4File ? [image4File] : null,
-        Image5: image5File ? [image5File] : null
+        Image5: image5File ? [image5File] : null,
+        PDF: solitaire.pdfUrl,
+        Video: solitaire.videoUrl
       })
     } catch (error) {
       console.error('Error in handleEdit:', error)
@@ -635,6 +774,24 @@ const SolitaireFilterPage = () => {
       setIsDeleting(false)
       setDeleteConfirmationOpen(false)
     }
+  }
+
+  // Handle PDF Icon Click
+  const handlePdfIconClick = pdfUrl => {
+    // Open PDF in a new tab
+    window.open(pdfUrl, '_blank')
+  }
+
+  // Handle Video Icon Click
+  const handleVideoIconClick = videoUrl => {
+    setSelectedVideoUrl(videoUrl)
+    setVideoModalOpen(true)
+  }
+
+  // Handle Close Video Modal
+  const handleCloseVideoModal = () => {
+    setVideoModalOpen(false)
+    setSelectedVideoUrl(null)
   }
 
   // Define Table Columns
@@ -787,6 +944,41 @@ const SolitaireFilterPage = () => {
           }
           return <Typography variant='body2'>No Image</Typography>
         }
+      }),
+      // PDF Column
+      columnHelper.accessor('pdfUrl', {
+        header: 'PDF',
+        cell: info => (
+          <div className='flex space-x-2 justify-center'>
+            {info.getValue() ? (
+              <IconButton onClick={() => handlePdfIconClick(info.getValue())} color='primary'>
+                <i className='ri-file-pdf-line' /> {/* PDF icon */}
+              </IconButton>
+            ) : (
+              <IconButton disabled color='secondary'>
+                <i className='ri-file-pdf-line' /> {/* Disabled PDF icon */}
+              </IconButton>
+            )}
+          </div>
+        )
+      }),
+
+      // Video Column
+      columnHelper.accessor('videoUrl', {
+        header: 'Video',
+        cell: info => (
+          <div className='flex space-x-2 justify-center'>
+            {info.getValue() ? (
+              <IconButton onClick={() => handleVideoIconClick(info.getValue())} color='primary'>
+                <i className='ri-play-circle-line' /> {/* Video icon */}
+              </IconButton>
+            ) : (
+              <IconButton disabled color='secondary'>
+                <i className='ri-play-circle-line' /> {/* Disabled video icon */}
+              </IconButton>
+            )}
+          </div>
+        )
       }),
       columnHelper.display({
         id: 'actions',
@@ -1413,7 +1605,6 @@ const SolitaireFilterPage = () => {
                   )
                 }}
               />
-
               {/* LocationID Controller */}
               <Controller
                 name='LocationID'
@@ -1489,6 +1680,77 @@ const SolitaireFilterPage = () => {
                   />
                 )}
               />
+              {/* PDF Upload */}
+              <Controller
+                name='PDF'
+                control={control}
+                rules={{ required: false }}
+                render={({ field }) => (
+                  <Stack direction='column' spacing={2} sx={{ mt: 2 }}>
+                    <Button variant='contained' component='label'>
+                      Upload PDF (Optional)
+                      <input
+                        type='file'
+                        hidden
+                        accept='application/pdf'
+                        {...field}
+                        onChange={e => {
+                          const file = e.target.files[0]
+                          if (file) {
+                            console.log('Selected file:', file)
+                            if (file.type !== 'application/pdf') {
+                              // PDF type check
+                              alert('Only PDF files are allowed.')
+                              return
+                            }
+                            if (file.size > 100 * 1024 * 1024) {
+                              // 100MB
+                              alert('File size should not exceed 100MB.')
+                              return
+                            }
+                          }
+                          field.onChange(e.target.files)
+                        }}
+                        value={undefined}
+                      />
+                    </Button>
+                    {field.value && field.value[0] && (
+                      <Typography variant='body2'>Selected file: {field.value[0].name}</Typography>
+                    )}
+                  </Stack>
+                )}
+              />
+              {/* Video Upload Controller */}
+              <Controller
+                name='Video'
+                control={control}
+                rules={{ required: false }}
+                render={({ field }) => (
+                  <Stack direction='column' spacing={2} sx={{ mt: 2 }}>
+                    <Button variant='contained' component='label'>
+                      Upload Video (Optional)
+                      <input
+                        type='file'
+                        hidden
+                        accept='video/mp4,video/webm,video/ogg,video/quicktime'
+                        {...field}
+                        onChange={e => {
+                          const file = e.target.files[0]
+                          if (file) {
+                            console.log('Selected file:', file)
+                            // ... [Your existing validation logic for video file type and size] ...
+                          }
+                          field.onChange(e.target.files)
+                        }}
+                        value={undefined}
+                      />
+                    </Button>
+                    {field.value && field.value[0] && (
+                      <Typography variant='body2'>Selected file: {field.value[0].name}</Typography>
+                    )}
+                  </Stack>
+                )}
+              />
               {/* Image Upload Fields */}
               <Controller
                 name='Image1'
@@ -1506,6 +1768,7 @@ const SolitaireFilterPage = () => {
                         onChange={e => {
                           const file = e.target.files[0]
                           if (file) {
+                            console.log('Selected file:', file) // Logging the selected file
                             if (!['image/jpeg', 'image/png', 'image/gif'].includes(file.type)) {
                               alert('Only JPG, PNG, and GIF files are allowed.')
                               return
@@ -1543,7 +1806,6 @@ const SolitaireFilterPage = () => {
                   </Stack>
                 )}
               />
-
               <Controller
                 name='Image2'
                 control={control}
@@ -2615,6 +2877,104 @@ const SolitaireFilterPage = () => {
                   </Stack>
                 )}
               />
+              {/* PDF Upload */}
+              <Controller
+                name='PDF'
+                control={editControl}
+                rules={{ required: false }}
+                render={({ field }) => (
+                  <Stack direction='column' spacing={2} sx={{ mt: 2 }}>
+                    <Button variant='contained' component='label'>
+                      Upload New PDF (Optional)
+                      <input
+                        type='file'
+                        hidden
+                        accept='application/pdf'
+                        {...field}
+                        onChange={e => {
+                          const file = e.target.files[0]
+                          if (file) {
+                            console.log('Selected file:', file)
+                            if (file.type !== 'application/pdf') {
+                              // PDF type check
+                              alert('Only PDF files are allowed.')
+                              return
+                            }
+                            if (file.size > 100 * 1024 * 1024) {
+                              // 100MB
+                              alert('File size should not exceed 100MB.')
+                              return
+                            }
+                          }
+                          field.onChange(e.target.files)
+                        }}
+                        value={undefined}
+                      />
+                    </Button>
+                    {/* Display existing PDF link or selected file name */}
+                    {solitaireToEdit?.pdfUrl && !field.value ? (
+                      <a
+                        href={solitaireToEdit.pdfUrl}
+                        target='_blank'
+                        rel='noopener noreferrer'
+                        className='flex items-center gap-2'
+                      >
+                        <i className='ri-file-pdf-line'></i>
+                        {solitaireToEdit.pdfUrl.split('/').pop()}
+                      </a>
+                    ) : field.value && field.value[0] ? (
+                      <Typography variant='body2'>Selected file: {field.value[0].name}</Typography>
+                    ) : (
+                      <Typography variant='body2'>No PDF Selected</Typography>
+                    )}
+                  </Stack>
+                )}
+              />
+
+              {/* Video Upload */}
+              <Controller
+                name='Video'
+                control={editControl}
+                rules={{ required: false }}
+                render={({ field }) => (
+                  <Stack direction='column' spacing={2} sx={{ mt: 2 }}>
+                    <Button variant='contained' component='label'>
+                      Upload New Video (Optional)
+                      <input
+                        type='file'
+                        hidden
+                        accept='video/mp4,video/webm,video/ogg,video/quicktime' // Add more video types if needed
+                        {...field}
+                        onChange={e => {
+                          const file = e.target.files[0]
+                          if (file) {
+                            console.log('Selected file:', file)
+                            // ... [Your existing validation logic for video file type and size] ...
+                          }
+                          field.onChange(e.target.files)
+                        }}
+                        value={undefined}
+                      />
+                    </Button>
+                    {/* Display existing Video link or selected file name */}
+                    {solitaireToEdit?.videoUrl && !field.value ? (
+                      <a
+                        href={solitaireToEdit.videoUrl}
+                        target='_blank'
+                        rel='noopener noreferrer'
+                        className='flex items-center gap-2'
+                      >
+                        <i className='ri-video-line'></i>
+                        {solitaireToEdit.videoUrl.split('/').pop()}
+                      </a>
+                    ) : field.value && field.value[0] ? (
+                      <Typography variant='body2'>Selected file: {field.value[0].name}</Typography>
+                    ) : (
+                      <Typography variant='body2'>No Video Selected</Typography>
+                    )}
+                  </Stack>
+                )}
+              />
             </div>
 
             {/* Submit Buttons */}
@@ -2629,6 +2989,23 @@ const SolitaireFilterPage = () => {
           </form>
         </div>
       </Drawer>
+
+      {/* Video Modal */}
+      <Dialog open={videoModalOpen} onClose={handleCloseVideoModal} fullWidth maxWidth='md'>
+        <DialogContent>
+          {selectedVideoUrl && (
+            <video src={selectedVideoUrl} controls width='100%'>
+              {/* Add any necessary video player attributes here */}
+              Your browser does not support the video tag.
+            </video>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseVideoModal} color='primary'>
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Title and Search Bar */}
       <Typography variant='h4' component='div' gutterBottom>
