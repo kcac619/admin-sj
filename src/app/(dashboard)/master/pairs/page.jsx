@@ -397,7 +397,8 @@ const PairFilterPage = () => {
                 },
                 '&.Mui-expanded': {
                   margin: 0 // Prevent margin changes when expanded
-                }
+                },
+                boxShadow: 'none' // Remove box shadow
               }}
             >
               <AccordionSummary expandIcon={<i className='ri-arrow-down-s-line' />}>
