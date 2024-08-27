@@ -11,17 +11,17 @@ export async function GET() {
       'PairName',
       'IsActive',
       'SolitaireIDs',
-      'SolitaireShapeNames'
+      'SolitaireNames' // Changed to SolitaireNames
     ])
-    console.log('admin get pairs result', result)
+
     if (result.statusid === 1) {
-      // Format the data (no need to group anymore)
+      // Format the data
       const pairs = result.data.map(pair => ({
-        PairID: pair.PairID, // Access properties with correct case
+        PairID: pair.PairID,
         PairName: pair.PairName,
         IsActive: pair.IsActive,
         SolitaireIDs: pair.SolitaireIDs ? pair.SolitaireIDs.split(',').map(Number) : [],
-        SolitaireShapeNames: pair.SolitaireShapeNames ? pair.SolitaireShapeNames.split(',') : []
+        SolitaireNames: pair.SolitaireNames ? pair.SolitaireNames.split(',') : [] // Changed to SolitaireNames
       }))
 
       return NextResponse.json(

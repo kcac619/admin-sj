@@ -30,7 +30,9 @@ import MuiAlert from '@mui/material/Alert'
 import Switch from '@mui/material/Switch'
 import FormControlLabel from '@mui/material/FormControlLabel'
 import Select from 'react-select'
-
+import Accordion from '@mui/material/Accordion'
+import AccordionSummary from '@mui/material/AccordionSummary'
+import AccordionDetails from '@mui/material/AccordionDetails'
 // React Table Imports
 import {
   useReactTable,
@@ -373,26 +375,52 @@ const PairFilterPage = () => {
       //   })
       // ),
       columnHelper.accessor('Solitaires', {
+        // Use accessor to get Solitaires data
         header: 'Solitaires',
         cell: ({ row }) => {
-          const solitaireIDs = row.original.SolitaireIDs || []
-          const solitaireShapeNames = row.original.SolitaireShapeNames || []
-          const solitairesArray = solitaireIDs.map((id, index) => ({
-            SolitaireID: id,
-            ShapeName: solitaireShapeNames[index] || ''
-          }))
+          // Access the SolitaireNames from the row data
+          const solitaireNames = row.original.SolitaireNames || []
 
+          // Check if there are any SolitaireNames associated with this pair
+          if (solitaireNames.length === 0) {
+            return <Typography variant='body2'>No Solitaires</Typography>
+          }
+
+          // Render Accordion
           return (
-            <div style={{ maxWidth: '200px', display: 'flex', overflow: 'hidden', whiteSpace: 'nowrap' }}>
-              {solitairesArray.map((solitaire, index) => (
-                <span key={index} style={{ marginRight: '10px', textOverflow: 'ellipsis', overflow: 'hidden' }}>
-                  {`${solitaire.SolitaireID} - ${solitaire.ShapeName},`}
-                </span>
-              ))}
-            </div>
+            <Accordion
+              disableGutters // Remove default Accordion padding
+              elevation={0} // No box shadow
+              sx={{
+                '&::before': {
+                  display: 'none' // Hide the default Accordion border
+                },
+                '&.Mui-expanded': {
+                  margin: 0, // Prevent margin changes when expanded
+                  boxShadow: 'none' // Remove box shadow
+                },
+                boxShadow: 'none', // Remove box shadow
+                backgroundColor: theme.palette.mode === 'dark' ? '#282a42' : '#fff', // Background color based on theme
+                color: theme.palette.mode === 'dark' ? '#eee9ef' : '#000' // Text color based on theme
+              }}
+            >
+              <AccordionSummary expandIcon={<i className='ri-arrow-down-s-line' />}>
+                {/* You can customize the summary content */}
+                <Typography variant='body2'>
+                  {/* Display the first 3 SolitaireNames (or less if there are fewer) */}
+                  {solitaireNames.slice(0, 1).join(', ')}
+                  {/* Display "... and more" if there are more than 3 SolitaireNames */}
+                  {solitaireNames.length > 1 && '... and more'}
+                </Typography>
+              </AccordionSummary>
+              <AccordionDetails>
+                {/* Display all SolitaireNames separated by commas */}
+                <Typography variant='body2'>{solitaireNames.join(', ')}</Typography>
+              </AccordionDetails>
+            </Accordion>
           )
         },
-        sortType: 'basic'
+        sortType: 'basic' // Enable basic sorting (string) for Solitaires
       }),
       columnHelper.accessor('IsActive', {
         header: 'Is Active',
@@ -546,7 +574,7 @@ const PairFilterPage = () => {
                     render={({ field }) => {
                       const options = solitaires.map(solitaire => ({
                         value: solitaire.SolitaireID.toString(),
-                        label: `${solitaire.SolitaireID} - ${solitaire.ShapeName}` // Display both ID and ShapeName
+                        label: `${solitaire.SolitaireName}` // Display both ID and ShapeName
                       }))
                       return (
                         <Select
@@ -556,11 +584,55 @@ const PairFilterPage = () => {
                           isSearchable
                           onChange={selectedOption => field.onChange(selectedOption ? selectedOption.value : '')}
                           value={options.find(option => option.value === field.value?.toString())}
-                          styles={
-                            {
-                              // ... your existing styles ...
-                            }
-                          }
+                          styles={{
+                            control: (provided, state) => ({
+                              ...provided,
+                              backgroundColor: theme.palette.mode === 'dark' ? '#3a3e5b' : '#fff', // White background in light mode
+                              color: theme.palette.mode === 'dark' ? '#fff' : '#444',
+                              borderColor: state.isFocused
+                                ? 'var(--mui-palette-primary-main)'
+                                : 'var(--mui-palette-divider)'
+                            }),
+                            singleValue: (provided, state) => ({
+                              ...provided,
+                              color: theme.palette.mode === 'dark' ? '#fff' : '#000' // Text color for selected value
+                            }),
+                            menu: provided => ({
+                              ...provided,
+                              backgroundColor: theme.palette.mode === 'dark' ? '#282a42' : '#fff',
+                              zIndex: 9999,
+                              '::-webkit-scrollbar': {
+                                width: '8px'
+                              },
+                              '::-webkit-scrollbar-thumb': {
+                                backgroundColor: theme.palette.mode === 'dark' ? '#555' : '#ccc',
+                                borderRadius: '4px'
+                              },
+                              '::-webkit-scrollbar-thumb:hover': {
+                                backgroundColor: theme.palette.mode === 'dark' ? '#777' : '#aaa'
+                              }
+                            }),
+                            option: (provided, state) => ({
+                              ...provided,
+                              backgroundColor:
+                                state.isFocused || state.isSelected
+                                  ? theme.palette.mode === 'dark'
+                                    ? '#1c1e33'
+                                    : 'rgba(0, 0, 0, 0.08)'
+                                  : provided.backgroundColor,
+                              color: state.isSelected
+                                ? theme.palette.mode === 'dark'
+                                  ? '#fff'
+                                  : '#000'
+                                : provided.color,
+                              '&:hover': {
+                                backgroundColor:
+                                  theme.palette.mode === 'dark'
+                                    ? '#3a3e5b' // Darker background on hover in dark mode
+                                    : 'rgba(0, 0, 0, 0.04)'
+                              }
+                            })
+                          }}
                         />
                       )
                     }}
@@ -661,7 +733,7 @@ const PairFilterPage = () => {
                     render={({ field }) => {
                       const options = solitaires.map(solitaire => ({
                         value: solitaire.SolitaireID.toString(),
-                        label: `${solitaire.SolitaireID} - ${solitaire.ShapeName}` // Display both ID and ShapeName
+                        label: `${solitaire.SolitaireName}` // Display both ID and ShapeName
                       }))
 
                       return (
@@ -672,11 +744,54 @@ const PairFilterPage = () => {
                           isSearchable
                           onChange={selectedOption => field.onChange(selectedOption ? selectedOption.value : '')}
                           value={options.find(option => option.value === field.value)}
-                          styles={
-                            {
-                              // ... your existing styles ...
-                            }
-                          }
+                          styles={{
+                            control: (provided, state) => ({
+                              ...provided,
+                              backgroundColor: theme.palette.mode === 'dark' ? '#3a3e5b' : '#fff', // White background in light mode
+                              color: theme.palette.mode === 'dark' ? '#eee9ef' : '#444',
+                              borderColor: state.isFocused
+                                ? 'var(--mui-palette-primary-main)'
+                                : 'var(--mui-palette-divider)'
+                            }),
+                            singleValue: (provided, state) => ({
+                              ...provided,
+                              color: theme.palette.mode === 'dark' ? '#fff' : '#000' // Text color for selected value
+                            }),
+                            menu: provided => ({
+                              ...provided,
+                              backgroundColor: theme.palette.mode === 'dark' ? '#282a42' : '#fff',
+                              zIndex: 9999,
+                              '::-webkit-scrollbar': {
+                                width: '8px'
+                              },
+                              '::-webkit-scrollbar-thumb': {
+                                backgroundColor: theme.palette.mode === 'dark' ? '#555' : '#ccc',
+                                borderRadius: '4px'
+                              },
+                              '::-webkit-scrollbar-thumb:hover': {
+                                backgroundColor: theme.palette.mode === 'dark' ? '#777' : '#aaa'
+                              }
+                            }),
+                            option: (provided, state) => ({
+                              ...provided,
+                              backgroundColor: state.isSelected
+                                ? theme.palette.mode === 'dark'
+                                  ? '#1c1e33'
+                                  : 'rgba(0, 0, 0, 0.08)'
+                                : provided.backgroundColor,
+                              color: state.isSelected
+                                ? theme.palette.mode === 'dark'
+                                  ? '#fff'
+                                  : '#000'
+                                : provided.color,
+                              '&:hover': {
+                                backgroundColor:
+                                  theme.palette.mode === 'dark'
+                                    ? '#3a3e5b' // Darker background on hover in dark mode
+                                    : 'rgba(0, 0, 0, 0.04)'
+                              }
+                            })
+                          }}
                         />
                       )
                     }}
