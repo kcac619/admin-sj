@@ -399,7 +399,9 @@ const PairFilterPage = () => {
                   margin: 0, // Prevent margin changes when expanded
                   boxShadow: 'none' // Remove box shadow
                 },
-                boxShadow: 'none' // Remove box shadow
+                boxShadow: 'none', // Remove box shadow
+                backgroundColor: theme.palette.mode === 'dark' ? '#282a42' : '#fff', // Background color based on theme
+                color: theme.palette.mode === 'dark' ? '#eee9ef' : '#000' // Text color based on theme
               }}
             >
               <AccordionSummary expandIcon={<i className='ri-arrow-down-s-line' />}>
@@ -572,7 +574,7 @@ const PairFilterPage = () => {
                     render={({ field }) => {
                       const options = solitaires.map(solitaire => ({
                         value: solitaire.SolitaireID.toString(),
-                        label: `${solitaire.SolitaireID} - ${solitaire.ShapeName}` // Display both ID and ShapeName
+                        label: `${solitaire.SolitaireName}` // Display both ID and ShapeName
                       }))
                       return (
                         <Select
@@ -582,11 +584,55 @@ const PairFilterPage = () => {
                           isSearchable
                           onChange={selectedOption => field.onChange(selectedOption ? selectedOption.value : '')}
                           value={options.find(option => option.value === field.value?.toString())}
-                          styles={
-                            {
-                              // ... your existing styles ...
-                            }
-                          }
+                          styles={{
+                            control: (provided, state) => ({
+                              ...provided,
+                              backgroundColor: theme.palette.mode === 'dark' ? '#3a3e5b' : '#fff', // White background in light mode
+                              color: theme.palette.mode === 'dark' ? '#fff' : '#444',
+                              borderColor: state.isFocused
+                                ? 'var(--mui-palette-primary-main)'
+                                : 'var(--mui-palette-divider)'
+                            }),
+                            singleValue: (provided, state) => ({
+                              ...provided,
+                              color: theme.palette.mode === 'dark' ? '#fff' : '#000' // Text color for selected value
+                            }),
+                            menu: provided => ({
+                              ...provided,
+                              backgroundColor: theme.palette.mode === 'dark' ? '#282a42' : '#fff',
+                              zIndex: 9999,
+                              '::-webkit-scrollbar': {
+                                width: '8px'
+                              },
+                              '::-webkit-scrollbar-thumb': {
+                                backgroundColor: theme.palette.mode === 'dark' ? '#555' : '#ccc',
+                                borderRadius: '4px'
+                              },
+                              '::-webkit-scrollbar-thumb:hover': {
+                                backgroundColor: theme.palette.mode === 'dark' ? '#777' : '#aaa'
+                              }
+                            }),
+                            option: (provided, state) => ({
+                              ...provided,
+                              backgroundColor:
+                                state.isFocused || state.isSelected
+                                  ? theme.palette.mode === 'dark'
+                                    ? '#1c1e33'
+                                    : 'rgba(0, 0, 0, 0.08)'
+                                  : provided.backgroundColor,
+                              color: state.isSelected
+                                ? theme.palette.mode === 'dark'
+                                  ? '#fff'
+                                  : '#000'
+                                : provided.color,
+                              '&:hover': {
+                                backgroundColor:
+                                  theme.palette.mode === 'dark'
+                                    ? '#3a3e5b' // Darker background on hover in dark mode
+                                    : 'rgba(0, 0, 0, 0.04)'
+                              }
+                            })
+                          }}
                         />
                       )
                     }}
@@ -687,7 +733,7 @@ const PairFilterPage = () => {
                     render={({ field }) => {
                       const options = solitaires.map(solitaire => ({
                         value: solitaire.SolitaireID.toString(),
-                        label: `${solitaire.SolitaireID} - ${solitaire.ShapeName}` // Display both ID and ShapeName
+                        label: `${solitaire.SolitaireName}` // Display both ID and ShapeName
                       }))
 
                       return (
@@ -698,11 +744,54 @@ const PairFilterPage = () => {
                           isSearchable
                           onChange={selectedOption => field.onChange(selectedOption ? selectedOption.value : '')}
                           value={options.find(option => option.value === field.value)}
-                          styles={
-                            {
-                              // ... your existing styles ...
-                            }
-                          }
+                          styles={{
+                            control: (provided, state) => ({
+                              ...provided,
+                              backgroundColor: theme.palette.mode === 'dark' ? '#3a3e5b' : '#fff', // White background in light mode
+                              color: theme.palette.mode === 'dark' ? '#eee9ef' : '#444',
+                              borderColor: state.isFocused
+                                ? 'var(--mui-palette-primary-main)'
+                                : 'var(--mui-palette-divider)'
+                            }),
+                            singleValue: (provided, state) => ({
+                              ...provided,
+                              color: theme.palette.mode === 'dark' ? '#fff' : '#000' // Text color for selected value
+                            }),
+                            menu: provided => ({
+                              ...provided,
+                              backgroundColor: theme.palette.mode === 'dark' ? '#282a42' : '#fff',
+                              zIndex: 9999,
+                              '::-webkit-scrollbar': {
+                                width: '8px'
+                              },
+                              '::-webkit-scrollbar-thumb': {
+                                backgroundColor: theme.palette.mode === 'dark' ? '#555' : '#ccc',
+                                borderRadius: '4px'
+                              },
+                              '::-webkit-scrollbar-thumb:hover': {
+                                backgroundColor: theme.palette.mode === 'dark' ? '#777' : '#aaa'
+                              }
+                            }),
+                            option: (provided, state) => ({
+                              ...provided,
+                              backgroundColor: state.isSelected
+                                ? theme.palette.mode === 'dark'
+                                  ? '#1c1e33'
+                                  : 'rgba(0, 0, 0, 0.08)'
+                                : provided.backgroundColor,
+                              color: state.isSelected
+                                ? theme.palette.mode === 'dark'
+                                  ? '#fff'
+                                  : '#000'
+                                : provided.color,
+                              '&:hover': {
+                                backgroundColor:
+                                  theme.palette.mode === 'dark'
+                                    ? '#3a3e5b' // Darker background on hover in dark mode
+                                    : 'rgba(0, 0, 0, 0.04)'
+                              }
+                            })
+                          }}
                         />
                       )
                     }}
