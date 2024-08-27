@@ -396,7 +396,8 @@ const PairFilterPage = () => {
                   display: 'none' // Hide the default Accordion border
                 },
                 '&.Mui-expanded': {
-                  margin: 0 // Prevent margin changes when expanded
+                  margin: 0, // Prevent margin changes when expanded
+                  boxShadow: 'none' // Remove box shadow
                 },
                 boxShadow: 'none' // Remove box shadow
               }}
