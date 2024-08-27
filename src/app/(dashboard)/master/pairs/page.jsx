@@ -30,7 +30,9 @@ import MuiAlert from '@mui/material/Alert'
 import Switch from '@mui/material/Switch'
 import FormControlLabel from '@mui/material/FormControlLabel'
 import Select from 'react-select'
-
+import Accordion from '@mui/material/Accordion'
+import AccordionSummary from '@mui/material/AccordionSummary'
+import AccordionDetails from '@mui/material/AccordionDetails'
 // React Table Imports
 import {
   useReactTable,
@@ -373,26 +375,48 @@ const PairFilterPage = () => {
       //   })
       // ),
       columnHelper.accessor('Solitaires', {
+        // Use accessor to get Solitaires data
         header: 'Solitaires',
         cell: ({ row }) => {
-          const solitaireIDs = row.original.SolitaireIDs || []
-          const solitaireShapeNames = row.original.SolitaireShapeNames || []
-          const solitairesArray = solitaireIDs.map((id, index) => ({
-            SolitaireID: id,
-            ShapeName: solitaireShapeNames[index] || ''
-          }))
+          // Access the SolitaireNames from the row data
+          const solitaireNames = row.original.SolitaireNames || []
 
+          // Check if there are any SolitaireNames associated with this pair
+          if (solitaireNames.length === 0) {
+            return <Typography variant='body2'>No Solitaires</Typography>
+          }
+
+          // Render Accordion
           return (
-            <div style={{ maxWidth: '200px', display: 'flex', overflow: 'hidden', whiteSpace: 'nowrap' }}>
-              {solitairesArray.map((solitaire, index) => (
-                <span key={index} style={{ marginRight: '10px', textOverflow: 'ellipsis', overflow: 'hidden' }}>
-                  {`${solitaire.SolitaireID} - ${solitaire.ShapeName},`}
-                </span>
-              ))}
-            </div>
+            <Accordion
+              disableGutters // Remove default Accordion padding
+              elevation={0} // No box shadow
+              sx={{
+                '&::before': {
+                  display: 'none' // Hide the default Accordion border
+                },
+                '&.Mui-expanded': {
+                  margin: 0 // Prevent margin changes when expanded
+                }
+              }}
+            >
+              <AccordionSummary expandIcon={<i className='ri-arrow-down-s-line' />}>
+                {/* You can customize the summary content */}
+                <Typography variant='body2'>
+                  {/* Display the first 3 SolitaireNames (or less if there are fewer) */}
+                  {solitaireNames.slice(0, 1).join(', ')}
+                  {/* Display "... and more" if there are more than 3 SolitaireNames */}
+                  {solitaireNames.length > 1 && '... and more'}
+                </Typography>
+              </AccordionSummary>
+              <AccordionDetails>
+                {/* Display all SolitaireNames separated by commas */}
+                <Typography variant='body2'>{solitaireNames.join(', ')}</Typography>
+              </AccordionDetails>
+            </Accordion>
           )
         },
-        sortType: 'basic'
+        sortType: 'basic' // Enable basic sorting (string) for Solitaires
       }),
       columnHelper.accessor('IsActive', {
         header: 'Is Active',
