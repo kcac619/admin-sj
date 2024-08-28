@@ -391,6 +391,7 @@ const PairFilterPage = () => {
             <Accordion
               disableGutters // Remove default Accordion padding
               elevation={0} // No box shadow
+              //   theme={theme} // Pass the theme to the Accordion
               sx={{
                 '&::before': {
                   display: 'none' // Hide the default Accordion border
@@ -400,7 +401,7 @@ const PairFilterPage = () => {
                   boxShadow: 'none' // Remove box shadow
                 },
                 boxShadow: 'none', // Remove box shadow
-                backgroundColor: theme.palette.mode === 'dark' ? '#282a42' : '#fff', // Background color based on theme
+                // backgroundColor: theme.palette.mode === 'dark' ? '#282a42' : '#fff', // Background color based on theme
                 color: theme.palette.mode === 'dark' ? '#eee9ef' : '#000' // Text color based on theme
               }}
             >

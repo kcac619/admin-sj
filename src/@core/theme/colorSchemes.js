@@ -238,7 +238,7 @@ const colorSchemes = skin => {
         dividerChannel: 'var(--mui-mainColorChannels-dark)',
         background: {
           default: skin === 'bordered' ? '#30334E' : '#282A42',
-          paper: '#30334E',
+          paper: '#282A42',
           paperChannel: '48 51 78'
         },
         action: {
