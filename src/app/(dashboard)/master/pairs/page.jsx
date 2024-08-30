@@ -30,9 +30,9 @@ import MuiAlert from '@mui/material/Alert'
 import Switch from '@mui/material/Switch'
 import FormControlLabel from '@mui/material/FormControlLabel'
 import Select from 'react-select'
-import Accordion from '@mui/material/Accordion'
-import AccordionSummary from '@mui/material/AccordionSummary'
-import AccordionDetails from '@mui/material/AccordionDetails'
+import Collapse from '@mui/material/Collapse' // Import Collapse for the collapsible table
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown' // Import icon for expand/collapse
+import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp'
 // React Table Imports
 import {
   useReactTable,
@@ -44,6 +44,7 @@ import {
 } from '@tanstack/react-table'
 import { Controller, useFieldArray, useForm } from 'react-hook-form'
 import { DialogContentText, MenuItem } from '@mui/material'
+import Image from 'next/image'
 
 // Define column helper
 const columnHelper = createColumnHelper()
@@ -78,6 +79,7 @@ const PairFilterPage = () => {
   const [isEditing, setIsEditing] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [isFilterDataLoading, setIsFilterDataLoading] = useState(true)
+  const [expandedRows, setExpandedRows] = useState({})
 
   // Toast State
   const [toastOpen, setToastOpen] = useState(false)
@@ -348,13 +350,24 @@ const PairFilterPage = () => {
       setDeleteConfirmationOpen(false)
     }
   }
+  // Handle Row Expand/Collapse
+  const handleRowExpand = pairId => {
+    setExpandedRows(prevState => ({ ...prevState, [pairId]: !prevState[pairId] }))
+  }
   // Define Table Columns
   const columns = useMemo(
     () => [
       columnHelper.display({
         id: 'srNo',
         header: 'Sr. No.',
-        cell: ({ row }) => row.index + 1 // Simple SR No.
+        cell: ({ row }) => (
+          <>
+            <IconButton onClick={() => handleRowExpand(row.original.PairID)} disabled={isFilterDataLoading}>
+              {expandedRows[row.original.PairID] ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
+            </IconButton>
+            {row.index + 1}
+          </>
+        )
       }),
       columnHelper.accessor('PairName', {
         // Using accessor for PairName
@@ -388,37 +401,12 @@ const PairFilterPage = () => {
 
           // Render Accordion
           return (
-            <Accordion
-              disableGutters // Remove default Accordion padding
-              elevation={0} // No box shadow
-              //   theme={theme} // Pass the theme to the Accordion
-              sx={{
-                '&::before': {
-                  display: 'none' // Hide the default Accordion border
-                },
-                '&.Mui-expanded': {
-                  margin: 0, // Prevent margin changes when expanded
-                  boxShadow: 'none' // Remove box shadow
-                },
-                boxShadow: 'none', // Remove box shadow
-                // backgroundColor: theme.palette.mode === 'dark' ? '#282a42' : '#fff', // Background color based on theme
-                color: theme.palette.mode === 'dark' ? '#eee9ef' : '#000' // Text color based on theme
-              }}
-            >
-              <AccordionSummary expandIcon={<i className='ri-arrow-down-s-line' />}>
-                {/* You can customize the summary content */}
-                <Typography variant='body2'>
-                  {/* Display the first 3 SolitaireNames (or less if there are fewer) */}
-                  {solitaireNames.slice(0, 1).join(', ')}
-                  {/* Display "... and more" if there are more than 3 SolitaireNames */}
-                  {solitaireNames.length > 1 && '... and more'}
-                </Typography>
-              </AccordionSummary>
-              <AccordionDetails>
-                {/* Display all SolitaireNames separated by commas */}
-                <Typography variant='body2'>{solitaireNames.join(', ')}</Typography>
-              </AccordionDetails>
-            </Accordion>
+            <Typography variant='body2'>
+              {/* Display the first 3 SolitaireNames (or less if there are fewer) */}
+              {solitaireNames.slice(0, 1).join(', ')}
+              {/* Display "... and more" if there are more than 3 SolitaireNames */}
+              {solitaireNames.length > 1 && '... and more'}
+            </Typography>
           )
         },
         sortType: 'basic' // Enable basic sorting (string) for Solitaires
@@ -462,7 +450,7 @@ const PairFilterPage = () => {
         )
       })
     ],
-    [isDeleting, pairToDelete, solitaires]
+    [expandedRows, handleRowExpand, isDeleting, pairToDelete, solitaires]
   )
 
   // React Table Instance
@@ -489,6 +477,7 @@ const PairFilterPage = () => {
     setEditModalOpen(false)
     resetEditForm()
   }
+
 
   const exportData = () => {
     // Implement the export functionality here
@@ -918,28 +907,149 @@ const PairFilterPage = () => {
 
               <TableBody>
                 {table.getRowModel().rows.map(row => (
-                  <TableRow
-                    key={row.id}
-                    style={{ padding: 0, margin: 0 }}
-                    // className={row.original.IsDeleted ? 'deleted-row' : ''} // No IsDeleted for now
-                  >
-                    {row.getVisibleCells().map(cell => (
-                      <TableCell
-                        key={cell.id}
-                        style={{
-                          paddingTop: '1px',
-                          paddingBottom: '1px',
-                          backgroundColor: theme.palette.mode === 'dark' ? '#282a42' : '#fff',
-                          color: theme.palette.mode === 'dark' ? '#eee9ef' : '#555'
-                          //   alignContent: 'center',
-                          //   textAlign: 'center',
-                          //   alignItems: 'center'
-                        }}
-                      >
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  <React.Fragment key={row.id}>
+                    <TableRow style={{ padding: 0, margin: 0 }}>
+                      {row.getVisibleCells().map(cell => (
+                        <TableCell
+                          key={cell.id}
+                          style={{
+                            paddingTop: '1px',
+                            paddingBottom: '1px',
+                            backgroundColor: theme.palette.mode === 'dark' ? '#282a42' : '#fff',
+                            color: theme.palette.mode === 'dark' ? '#eee9ef' : '#555'
+                            // alignContent: 'center',
+                            // textAlign: 'center',
+                            // alignItems: 'center'
+                          }}
+                        >
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+
+                    {/* Collapsible Row (Nested Table) */}
+                    <TableRow>
+                      <TableCell style={{ padding: 0 }} colSpan={columns.length}>
+                        <Collapse
+                          in={expandedRows[row.original.PairID]}
+                          timeout='auto'
+                          unmountOnExit
+                          sx={{
+                            '&::before': {
+                              display: 'none' // Hide the default Accordion border
+                            },
+                            '&.Mui-expanded': {
+                              margin: 0, // Prevent margin changes when expanded
+                              boxShadow: 'none' // Remove box shadow
+                            },
+                            boxShadow: 'none', // Remove box shadow
+                            backgroundColor: theme.palette.mode === 'dark' ? '#282a42' : '#fff', // Background color based on theme
+                            color: theme.palette.mode === 'dark' ? '#eee9ef' : '#000' // Text color based on theme
+                          }}
+                        >
+                          <div className='p-4'>
+                            {/* Nested Table for Solitaire details */}
+                            <Table size='small' aria-label='solitaires'>
+                              <TableHead>
+                                <TableRow>
+                                  <TableCell>Solitaire Name</TableCell>
+                                  <TableCell align='right'>Carat</TableCell>
+                                  <TableCell>Color</TableCell>
+                                  <TableCell>Fluorescence</TableCell>
+                                  <TableCell>Purity</TableCell>
+                                  <TableCell>Cut</TableCell>
+                                  <TableCell>Lab</TableCell>
+                                  <TableCell>Polish</TableCell>
+                                  <TableCell>Symmetry</TableCell>
+                                  <TableCell>Location</TableCell>
+                                  <TableCell>Certificate Number</TableCell>
+                                  <TableCell>Unique Code</TableCell>
+                                  <TableCell>Images</TableCell>
+                                </TableRow>
+                              </TableHead>
+                              <TableBody>
+                                {row.original.SolitaireIDs.map((solitaireId, index) => {
+                                  const solitaire = solitaires.find(s => s.SolitaireID === solitaireId)
+                                  return (
+                                    solitaire && (
+                                      <TableRow key={index}>
+                                        <TableCell component='th' scope='row'>
+                                          {solitaire.SolitaireName}
+                                        </TableCell>
+                                        <TableCell align='right'>{solitaire.Carat}</TableCell>
+                                        <TableCell>{solitaire.ColorName}</TableCell>
+                                        <TableCell>{solitaire.FluorName}</TableCell>
+                                        <TableCell>{solitaire.PurityName}</TableCell>
+                                        <TableCell>{solitaire.CutName}</TableCell>
+                                        <TableCell>{solitaire.LabName}</TableCell>
+                                        <TableCell>{solitaire.PolishName}</TableCell>
+                                        <TableCell>{solitaire.SymmetryName}</TableCell>
+                                        <TableCell>{solitaire.LocationName}</TableCell>
+                                        <TableCell>{solitaire.CertificateNumber}</TableCell>
+                                        <TableCell>{solitaire.UniqueCode}</TableCell>
+                                        {/* Image Cell */}
+                                        <TableCell>
+                                          <Stack direction='row' spacing={1}>
+                                            {' '}
+                                            {/* Stack images horizontally */}
+                                            {solitaire.Image1 && (
+                                              <Image
+                                                src={solitaire.Image1}
+                                                alt='Image 1'
+                                                width={30}
+                                                height={30}
+                                                style={{ backgroundColor: '#fff' }}
+                                              />
+                                            )}
+                                            {solitaire.Image2 && (
+                                              <Image
+                                                src={solitaire.Image2}
+                                                alt='Image 2'
+                                                width={30}
+                                                height={30}
+                                                style={{ backgroundColor: '#fff' }}
+                                              />
+                                            )}
+                                            {solitaire.Image3 && (
+                                              <Image
+                                                src={solitaire.Image3}
+                                                alt='Image 3'
+                                                width={30}
+                                                height={30}
+                                                style={{ backgroundColor: '#fff' }}
+                                              />
+                                            )}
+                                            {solitaire.Image4 && (
+                                              <Image
+                                                src={solitaire.Image4}
+                                                alt='Image 4'
+                                                width={30}
+                                                height={30}
+                                                style={{ backgroundColor: '#fff' }}
+                                              />
+                                            )}
+                                            {solitaire.Image5 && (
+                                              <Image
+                                                src={solitaire.Image5}
+                                                alt='Image 5'
+                                                width={30}
+                                                height={30}
+                                                style={{ backgroundColor: '#fff' }}
+                                              />
+                                            )}
+                                          </Stack>
+                                        </TableCell>
+                                      </TableRow>
+                                    )
+                                  )
+                                })}
+                              </TableBody>
+                            </Table>
+                          </div>
+                        </Collapse>
                       </TableCell>
-                    ))}
-                  </TableRow>
+                    </TableRow>
+                  </React.Fragment>
                 ))}
               </TableBody>
             </Table>
