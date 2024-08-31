@@ -137,6 +137,8 @@ const SolitaireFilterPage = () => {
   } = useForm({
     defaultValues: {
       SolitaireID: '',
+      SolitaireName: '',
+      SolitaireSlug: '',
       ShapeID: '',
       Carat: '',
       ColorID: '',
@@ -162,6 +164,16 @@ const SolitaireFilterPage = () => {
   const isCertificateNumberUniqueForEdit = (certificateNumber, solitaireId) => {
     return !solitaires.some(s => s.SolitaireID !== solitaireId && s.CertificateNumber === certificateNumber) // Exclude current ID
   }
+
+  const isSolitaireSlugUnique = slug => {
+    return !solitaires.some(solitaire => solitaire.SolitaireSlug === slug)
+  }
+
+  // Function to check if a SolitaireSlug is unique for Edit (excluding the current Solitaire)
+  const isSolitaireSlugUniqueForEdit = (slug, solitaireId) => {
+    return !solitaires.some(solitaire => solitaire.SolitaireID !== solitaireId && solitaire.SolitaireSlug === slug)
+  }
+
   // Fetch Data for All Filters
   const fetchAllFilterData = async () => {
     try {
@@ -266,7 +278,14 @@ const SolitaireFilterPage = () => {
 
   const onAddSubmit = async data => {
     setIsAdding(true)
-
+    if (!isSolitaireSlugUnique(data.SolitaireSlug)) {
+      setError('Solitaire slug must be unique.')
+      setToastSeverity('error')
+      setToastMessage('Solitaire slug must be unique.')
+      setToastOpen(true)
+      setIsAdding(false)
+      return // Stop further execution
+    }
     // Check if the certificate number is unique
     if (!isCertificateNumberUnique(data.CertificateNumber)) {
       setError('Certificate number must be unique.')
@@ -443,6 +462,14 @@ const SolitaireFilterPage = () => {
     try {
       const formData = new FormData()
 
+      if (!isSolitaireSlugUniqueForEdit(data.SolitaireSlug, parseInt(data.SolitaireID))) {
+        setError('Solitaire slug must be unique.')
+        setToastSeverity('error')
+        setToastMessage('Solitaire slug must be unique.')
+        setToastOpen(true)
+        setIsEditing(false)
+        return // Stop further execution
+      }
       // Check if the certificate number is unique
       if (!isCertificateNumberUniqueForEdit(data.CertificateNumber, parseInt(data.SolitaireID))) {
         setError('Certificate number must be unique.')
@@ -465,6 +492,8 @@ const SolitaireFilterPage = () => {
       formData.append('SymmetryID', parseInt(data.SymmetryID))
       formData.append('LocationID', parseInt(data.LocationID))
       formData.append('CertificateNumber', data.CertificateNumber)
+      formData.append('SolitaireName', data.SolitaireName)
+      formData.append('SolitaireSlug', data.SolitaireSlug)
 
       // Handle image uploads (similar to onAddSubmit)
       const imageFields = ['Image1', 'Image2', 'Image3', 'Image4', 'Image5']
@@ -710,6 +739,8 @@ const SolitaireFilterPage = () => {
 
       resetEditForm({
         SolitaireID: solitaire.SolitaireID,
+        SolitaireName: solitaire.SolitaireName,
+        SolitaireSlug: solitaire.SolitaireSlug,
         ShapeID: shapeId.toString(),
         Carat: solitaire.Carat.toFixed(2),
         ColorID: colorId.toString(),
@@ -801,6 +832,18 @@ const SolitaireFilterPage = () => {
         id: 'srNo',
         header: 'Sr. No.',
         cell: ({ row }) => row.index + 1 // Simple SR No.
+      }),
+      columnHelper.accessor('SolitaireName', {
+        // Add SolitaireName column
+        header: 'Solitaire Name',
+        cell: info => info.getValue(),
+        sortType: 'basic'
+      }),
+      columnHelper.accessor('SolitaireSlug', {
+        // Add SolitaireSlug column (you might not want to display this)
+        header: 'Slug',
+        cell: info => info.getValue(),
+        sortType: 'basic'
       }),
       // CertificateNumber column
       columnHelper.accessor('CertificateNumber', {
@@ -1141,6 +1184,38 @@ const SolitaireFilterPage = () => {
           <form onSubmit={handleAddSubmit(onAddSubmit)} className='flex flex-col gap-5'>
             <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
               {/* ShapeID Controller */}
+              <Controller
+                name='SolitaireName'
+                control={control}
+                rules={{ required: true }}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    fullWidth
+                    label='Solitaire Name'
+                    placeholder='Enter Solitaire Name'
+                    error={!!addErrors.SolitaireName}
+                    helperText={addErrors.SolitaireName ? 'This field is required' : ''}
+                  />
+                )}
+              />
+
+              {/* SolitaireSlug Controller */}
+              <Controller
+                name='SolitaireSlug'
+                control={control}
+                rules={{ required: true }}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    fullWidth
+                    label='Solitaire Slug'
+                    placeholder='Enter Solitaire Slug'
+                    error={!!addErrors.SolitaireSlug}
+                    helperText={addErrors.SolitaireSlug ? 'This field is required' : ''}
+                  />
+                )}
+              />
               <Controller
                 name='ShapeID'
                 control={control}
@@ -2071,6 +2146,40 @@ const SolitaireFilterPage = () => {
         <div className='p-5'>
           <form onSubmit={handleEditSubmit(onEditSubmit)} className='flex flex-col gap-5'>
             <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
+              <Controller
+                name='SolitaireName'
+                control={editControl}
+                rules={{ required: true }}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    fullWidth
+                    label='Solitaire Name'
+                    placeholder='Enter Solitaire Name'
+                    error={!!editErrors.SolitaireName}
+                    helperText={editErrors.SolitaireName ? 'This field is required' : ''}
+                    value={field.value}
+                  />
+                )}
+              />
+
+              {/* SolitaireSlug Controller */}
+              <Controller
+                name='SolitaireSlug'
+                control={editControl}
+                rules={{ required: true }}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    fullWidth
+                    label='Solitaire Slug'
+                    placeholder='Enter Solitaire Slug'
+                    error={!!editErrors.SolitaireSlug}
+                    helperText={editErrors.SolitaireSlug ? 'This field is required' : ''}
+                    value={field.value}
+                  />
+                )}
+              />
               {/* ShapeID Controller */}
               <Controller
                 name='ShapeID'

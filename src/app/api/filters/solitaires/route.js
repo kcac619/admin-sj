@@ -36,6 +36,8 @@ export async function GET(request) {
       'Image5',
       'PDFKey',
       'VideoKey',
+      'SolitaireName',
+      'SolitaireSlug',
       'IsActive'
     ])
 
@@ -130,6 +132,8 @@ export async function POST(request) {
     const SymmetryID = parseInt(formData.get('SymmetryID'), 10)
     const LocationID = parseInt(formData.get('LocationID'), 10)
     const CertificateNumber = formData.get('CertificateNumber')
+    const SolitaireName = formData.get('SolitaireName')
+    const SolitaireSlug = formData.get('SolitaireSlug')
 
     const imageFields = ['Image1', 'Image2', 'Image3', 'Image4', 'Image5']
     const uploadedImageKeys = await Promise.all(
@@ -245,6 +249,8 @@ export async function POST(request) {
         Image5: uploadedImageKeys[4],
         PDFKey: uploadedPDFKey,
         VideoKey: uploadedVideoKey,
+        SolitaireName: SolitaireName,
+        SolitaireSlug: SolitaireSlug,
         CreatedBy: CreatedBy,
         CompanyID: CompanyID
       },
@@ -308,6 +314,8 @@ export async function PUT(request) {
     const SymmetryID = parseInt(formData.get('SymmetryID'), 10)
     const LocationID = parseInt(formData.get('LocationID'), 10)
     const CertificateNumber = formData.get('CertificateNumber')
+    const SolitaireName = formData.get('SolitaireName')
+    const SolitaireSlug = formData.get('SolitaireSlug')
     const ModifiedBy = 1
 
     // PDF Handling
@@ -409,6 +417,8 @@ export async function PUT(request) {
         Image5: uploadedImageKeys[4],
         PDFKey: uploadedPDFKey,
         VideoKey: uploadedVideoKey,
+        SolitaireName,
+        SolitaireSlug,
         ModifiedBy
       },
       ['StatusID', 'StatusMessage']
