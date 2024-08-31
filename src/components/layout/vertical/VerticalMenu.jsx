@@ -137,6 +137,16 @@ const VerticalMenu = ({ scrollMenu }) => {
               &nbsp;&nbsp;&nbsp;&nbsp;Location
             </span>
           </MenuItem>
+          <MenuItem href='/master/testimonials'>
+            <span style={{ fontFamily: 'Inter, Helvetica Neue, Arial, sans-serif' }}>
+              &nbsp;&nbsp;&nbsp;&nbsp;Testimonials
+            </span>
+          </MenuItem>
+          <MenuItem href='/master/blogs'>
+            <span style={{ fontFamily: 'Inter, Helvetica Neue, Arial, sans-serif' }}>
+              &nbsp;&nbsp;&nbsp;&nbsp;Blogs
+            </span>
+          </MenuItem>
         </SubMenu>
         <MenuItem href='/about' icon={<i className='ri-information-line' />}>
           <span style={{ fontFamily: 'Inter, Helvetica Neue, Arial, sans-serif' }}>About </span>
