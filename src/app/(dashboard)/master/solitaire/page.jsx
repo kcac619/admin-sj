@@ -946,40 +946,40 @@ const SolitaireFilterPage = () => {
         }
       }),
       // PDF Column
-      columnHelper.accessor('pdfUrl', {
-        header: 'PDF',
-        cell: info => (
-          <div className='flex space-x-2 justify-center'>
-            {info.getValue() ? (
-              <IconButton onClick={() => handlePdfIconClick(info.getValue())} color='primary'>
-                <i className='ri-file-pdf-line' /> {/* PDF icon */}
-              </IconButton>
-            ) : (
-              <IconButton disabled color='secondary'>
-                <i className='ri-file-pdf-line' /> {/* Disabled PDF icon */}
-              </IconButton>
-            )}
-          </div>
-        )
-      }),
+      // columnHelper.accessor('pdfUrl', {
+      //   header: 'PDF',
+      //   cell: info => (
+      //     <div className='flex space-x-2 justify-center'>
+      //       {info.getValue() ? (
+      //         <IconButton onClick={() => handlePdfIconClick(info.getValue())} color='primary'>
+      //           <i className='ri-file-pdf-line' /> {/* PDF icon */}
+      //         </IconButton>
+      //       ) : (
+      //         <IconButton disabled color='secondary'>
+      //           <i className='ri-file-pdf-line' /> {/* Disabled PDF icon */}
+      //         </IconButton>
+      //       )}
+      //     </div>
+      //   )
+      // }),
 
-      // Video Column
-      columnHelper.accessor('videoUrl', {
-        header: 'Video',
-        cell: info => (
-          <div className='flex space-x-2 justify-center'>
-            {info.getValue() ? (
-              <IconButton onClick={() => handleVideoIconClick(info.getValue())} color='primary'>
-                <i className='ri-play-circle-line' /> {/* Video icon */}
-              </IconButton>
-            ) : (
-              <IconButton disabled color='secondary'>
-                <i className='ri-play-circle-line' /> {/* Disabled video icon */}
-              </IconButton>
-            )}
-          </div>
-        )
-      }),
+      // // Video Column
+      // columnHelper.accessor('videoUrl', {
+      //   header: 'Video',
+      //   cell: info => (
+      //     <div className='flex space-x-2 justify-center'>
+      //       {info.getValue() ? (
+      //         <IconButton onClick={() => handleVideoIconClick(info.getValue())} color='primary'>
+      //           <i className='ri-play-circle-line' /> {/* Video icon */}
+      //         </IconButton>
+      //       ) : (
+      //         <IconButton disabled color='secondary'>
+      //           <i className='ri-play-circle-line' /> {/* Disabled video icon */}
+      //         </IconButton>
+      //       )}
+      //     </div>
+      //   )
+      // }),
       columnHelper.display({
         id: 'actions',
         header: 'Actions',
@@ -1681,7 +1681,7 @@ const SolitaireFilterPage = () => {
                 )}
               />
               {/* PDF Upload */}
-              <Controller
+              {/* <Controller
                 name='PDF'
                 control={control}
                 rules={{ required: false }}
@@ -1719,9 +1719,9 @@ const SolitaireFilterPage = () => {
                     )}
                   </Stack>
                 )}
-              />
+              /> */}
               {/* Video Upload Controller */}
-              <Controller
+              {/* <Controller
                 name='Video'
                 control={control}
                 rules={{ required: false }}
@@ -1750,7 +1750,7 @@ const SolitaireFilterPage = () => {
                     )}
                   </Stack>
                 )}
-              />
+              /> */}
               {/* Image Upload Fields */}
               <Controller
                 name='Image1'
@@ -2878,7 +2878,7 @@ const SolitaireFilterPage = () => {
                 )}
               />
               {/* PDF Upload */}
-              <Controller
+              {/* <Controller
                 name='PDF'
                 control={editControl}
                 rules={{ required: false }}
@@ -2911,7 +2911,7 @@ const SolitaireFilterPage = () => {
                         value={undefined}
                       />
                     </Button>
-                    {/* Display existing PDF link or selected file name */}
+                    Display existing PDF link or selected file name
                     {solitaireToEdit?.pdfUrl && !field.value ? (
                       <a
                         href={solitaireToEdit.pdfUrl}
@@ -2929,10 +2929,10 @@ const SolitaireFilterPage = () => {
                     )}
                   </Stack>
                 )}
-              />
+              /> */}
 
               {/* Video Upload */}
-              <Controller
+              {/* <Controller
                 name='Video'
                 control={editControl}
                 rules={{ required: false }}
@@ -2956,7 +2956,7 @@ const SolitaireFilterPage = () => {
                         value={undefined}
                       />
                     </Button>
-                    {/* Display existing Video link or selected file name */}
+                    
                     {solitaireToEdit?.videoUrl && !field.value ? (
                       <a
                         href={solitaireToEdit.videoUrl}
@@ -2974,7 +2974,7 @@ const SolitaireFilterPage = () => {
                     )}
                   </Stack>
                 )}
-              />
+              /> */}
             </div>
 
             {/* Submit Buttons */}
