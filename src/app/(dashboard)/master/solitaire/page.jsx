@@ -3065,7 +3065,7 @@ const SolitaireFilterPage = () => {
                         value={undefined}
                       />
                     </Button>
-                    
+
                     {solitaireToEdit?.videoUrl && !field.value ? (
                       <a
                         href={solitaireToEdit.videoUrl}

@@ -86,6 +86,16 @@ const VerticalMenu = ({ scrollMenu }) => {
               &nbsp;&nbsp;&nbsp;&nbsp;Combos
             </span>
           </MenuItem> */}
+          <MenuItem href='/master/categories'>
+            <span style={{ fontFamily: 'Inter, Helvetica Neue, Arial, sans-serif' }}>
+              &nbsp;&nbsp;&nbsp;&nbsp;Categories
+            </span>
+          </MenuItem>
+          <MenuItem href='/master/products'>
+            <span style={{ fontFamily: 'Inter, Helvetica Neue, Arial, sans-serif' }}>
+              &nbsp;&nbsp;&nbsp;&nbsp;Products
+            </span>
+          </MenuItem>
           <MenuItem href='/master/pairs'>
             <span style={{ fontFamily: 'Inter, Helvetica Neue, Arial, sans-serif' }}>
               &nbsp;&nbsp;&nbsp;&nbsp;Pairs
